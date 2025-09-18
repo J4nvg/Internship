@@ -14,6 +14,7 @@ Niet diagonaal
     - R terug op minimap
     - Data verzamelen
     
+    
 
 """
 
