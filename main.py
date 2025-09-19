@@ -1,4 +1,4 @@
-from time import time as timer
+import timeit
 import numpy as np
 import matplotlib.pyplot as plt
 from board import Board
@@ -10,12 +10,12 @@ Set of Assumptions:
 Niet diagonaal
 
 #TODO
-    
-    - R terug op minimap
+    - Nieuwe strategieën implementeren
+        - gehele swarm: Horizontal scan, vertical scan
+        - verdeelde Horizontal scan, verticial scan
+        - Gehele swarm: beste route permutatie
+        - Verdeeld naar locaties
     - Data verzamelen
-    
-    
-
 """
 
 
@@ -39,10 +39,12 @@ Niet diagonaal
 
 def main():
     sim = Simulation()
-    # sim.run_random_walk(plot_boards=True)
-    sim.run_aStarBased_strategy(plot_boards=True, plot_interval=.2 )
-
+    # sim.run_random_walk(plot_boards=False)
+    sim.together_traverse_best_permutation()
+    # sim.run_aStarBased_strategy(plot_boards=True, plot_interval=.2 )
+#
 
 
 if __name__ == "__main__":
+    # timeit.timeit("main()",number=10)
     main()

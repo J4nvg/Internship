@@ -43,16 +43,16 @@ class Cell():
         if n_drones>0 and self.contains_hider:
             return f"\x1b[3;33;43m■\x1b[0m"
         elif n_drones>0:
-            return f"\x1b[6;30;42m{n_drones}\x1b[0m"
+            return f"{n_drones}"
         elif self.contains_hider:
             return f"\x1b[6;30;42m#\x1b[0m"
         elif self.p >0 :
-            return f"R"
+            return f"\x1b[6;30;42mR\x1b[0m"
         else:
             return ' '
 
 class Board():
-    def __init__(self,width=10,height=10,n_hiders=3,n_risks = 10,takedown_chance = .5 , dirichlet_alpha=1, id=1):
+    def __init__(self,width=10,height=10,n_hiders=3,n_risks = 10,takedown_chance = .5 , dirichlet_alpha=2, id=1):
 
         self.width = width
         self.height = height
@@ -67,9 +67,10 @@ class Board():
 
         self.board = self.create_board()
 
-        self.hider_cells = set()
+        self.hider_candidates = set()
         self.hider = ()
-        self.set_hider_cells(n_hiders)
+        if not FULL_BOARD_HIDING:
+            self.set_hider_candidates(n_hiders)
 
         self.id = id
 
@@ -120,13 +121,13 @@ class Board():
                 return False
         return
 
-    def set_hider_cells(self,n):
+    def set_hider_candidates(self,n):
         flat_cells = self.board.flatten()
         for i in range(n):
-            available_cells = [cell for cell in flat_cells if cell not in self.hider_cells]
+            available_cells = [cell for cell in flat_cells if cell not in self.hider_candidates]
             if available_cells:
                 cell = np.random.choice(available_cells)
-                self.hider_cells.add(cell)
+                self.hider_candidates.add(cell)
                 cell.set_hiding_chance(self.dist.sample())
                 cell.set_risk(RISKY_AREA_P)
         return
@@ -145,7 +146,7 @@ class Board():
 
         elif tactic == "weighted":
             chosen_cell = np.random.choice(flat,p=qs)
-            chosen_cell.set_hider(hider)
+            chosen_cell.set_hider()
             print(f"{hider} in cell {chosen_cell.loc} with {chosen_cell.q} even though max q was {np.max(qs)}")
         self.hider = chosen_cell.loc
 

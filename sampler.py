@@ -15,4 +15,4 @@ class Dist():
             self.c+=1
             return val
         else:
-            raise Exception(f"Something went wrong wen sampling numbers {self.i} {self.size}")
+            raise Exception(f"Something went wrong when sampling numbers {self.i} {self.size}")

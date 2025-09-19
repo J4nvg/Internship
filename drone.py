@@ -3,11 +3,11 @@ import networkx as nx
 from collections import deque
 import sys, time
 
+from helpers import manhattan_distance
+
 
 class Swarm():
-    def __init__(self,board,size,symbol='d'):
-        if size > 4:
-            raise Exception('Current implementation only supports upto four for a swarm')
+    def __init__(self,board,size,symbol='d', init_strat="top-left"):
         self.size = size
         self.board = board
         self.swarm = []
@@ -17,22 +17,30 @@ class Swarm():
         self.symbol = symbol
         self.cell_probabilities = self.cells_by_probability()
         self.goal = self.cell_probabilities[0]
+        self.init_strat = init_strat
+        self.init_swarm(strat=init_strat)
+        self.same_start = True
 
-        self.init_swarm()
-
-    def init_swarm(self, strat="top-right"):
+    def init_swarm(self, strat):
         self.swarm = [Drone(self.board,goal=self.goal,symbol=self.symbol,parent_swarm=self,num=i) for i in range(self.size)]
 
         if strat=="corner":
-            i = 1
             corners = [(0,0),(self.board.width-1,0),(self.board.width-1,self.board.height-1),(0,self.board.height-1)]
-            for i,drone in enumerate(self.swarm):
+            i = 0
+            for drone in self.swarm:
+                s = corners[i]
                 drone.set_init_location(s)
+                i+=1
+                if i == 4:
+                    i = 0
+            self.same_start = False
 
-        elif strat=="top-right":
+
+        elif strat=="top-left":
             s = (0,0)
             for drone in self.swarm:
                 drone.set_init_location(s)
+            self.same_start = True
         else:
             raise Exception("not implemented yet;")
         self.available = [drone for drone in self.swarm]
@@ -92,6 +100,10 @@ class Drone():
         target_found = next_cell.contains_hider
 
         current_node = self.current_loc
+
+        if manhattan_distance(to_x_y,current_node) >1:
+            raise Exception("Drone cannot skip cells........ Fatal error")
+
         current_cell = graph.nodes[current_node]['cell']
 
         current_cell.remove_drone(self)
@@ -142,7 +154,6 @@ class Drone():
         # print(f"Drone at {self.current_loc} finding path from graph node {source_node} to {target_node}")
         path = nx.shortest_path(graph, source=source_node, target=target_node)
         # print("Found path:", path)
-        # path.pop(0) Misschien niet de eerste poppen, om de case te coveren waarbij # in spawning cell zit.
         return deque(path)
 
     def set_route(self,path,route_length=-1):
