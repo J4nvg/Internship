@@ -2,7 +2,7 @@ from csv import excel
 import numpy as np
 
 from drone import Drone
-from game_config import RANDOM_RISK_ALLOCATION,FULL_BOARD_HIDING, RISKY_AREA_P
+from game_config import RANDOM_RISK_ALLOCATION, FULL_BOARD_HIDING, RISKY_AREA_P, NUMBER_OF_HIDERS
 from sampler import Dist
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -39,27 +39,28 @@ class Cell():
         return
 
     def __str__(self):
-        n_drones = len(self.drone_container)
-        if n_drones>0 and self.contains_hider:
+        if len(self.drone_container)>0 and self.contains_hider:
             return f"\x1b[3;33;43m■\x1b[0m"
-        elif n_drones>0:
-            return f"{n_drones}"
+        elif len(self.drone_container)>0:
+            return f"{len(self.drone_container)}"
         elif self.contains_hider:
             return f"\x1b[6;30;42m#\x1b[0m"
         elif self.p >0 :
             return f"\x1b[6;30;42mR\x1b[0m"
         else:
-            return ' '
+            return '.'
 
 class Board():
     def __init__(self,width=10,height=10,n_hiders=3,n_risks = 10,takedown_chance = .5 , dirichlet_alpha=2, id=1):
 
         self.width = width
         self.height = height
+        self.n_hiders = n_hiders
+
 
         if FULL_BOARD_HIDING:
             self.dist = Dist(size=width*height,alpha=dirichlet_alpha)
-        else:
+        elif n_hiders>0:
             self.dist = Dist(size=n_hiders,alpha=dirichlet_alpha)
 
 
@@ -69,7 +70,7 @@ class Board():
 
         self.hider_candidates = set()
         self.hider = ()
-        if not FULL_BOARD_HIDING:
+        if not FULL_BOARD_HIDING and n_hiders >0:
             self.set_hider_candidates(n_hiders)
 
         self.id = id
@@ -104,8 +105,8 @@ class Board():
 
     def add_drone_to_board(self,drone,s):
         x,y = s
-        print(f"Placing drone on (x:{x},y:{y})")
-        self.board[y,x].add_drone(drone)
+        # print(f"Placing drone on (x:{x},y:{y})")
+        # self.board[y,x].add_drone(drone)
         return
 
     def set_spread_over_board_risks(self,n,p):
@@ -133,7 +134,8 @@ class Board():
         return
 
     def hide(self,hider,tactic="greedy"):
-
+        if self.n_hiders <=0:
+            return
         flat = self.board.flatten()
         qs = np.array([cell.q for cell in flat])
         chosen_cell = None

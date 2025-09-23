@@ -1,13 +1,13 @@
 ##############################################
 # Square board:
-square_size = 20
+square_size = 10
 
 
 WIDTH, HEIGHT = square_size, square_size  # Let's keep it square for now too
 
 
 ### Drone settings ###
-NUMBER_OF_DRONES_IN_SWARM = 60
+NUMBER_OF_DRONES_IN_SWARM = 2
 DRONE_SYMBOL = 'X'
 
 ### Risk Settings ###
@@ -20,7 +20,7 @@ NUMBER_OF_RISK_LOCATIONS = round(WIDTH*HEIGHT*RISKY_AREA_FRAC)
 
 ### Hider Settings ###
 FULL_BOARD_HIDING = False
-NUMBER_OF_HIDERS = 7
+NUMBER_OF_HIDERS = 2
 HIDING_STRATEGY = "weighted" # greedy | weighted
 
 

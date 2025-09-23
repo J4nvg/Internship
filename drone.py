@@ -66,6 +66,13 @@ class Swarm():
         self.takenDown.append(drone)
         return
 
+    def remove_swarm(self):
+        graph = self.board.graph
+        for drone in self.swarm:
+            current_node = drone.current_loc
+            current_cell = graph.nodes[current_node]['cell']
+            current_cell.remove_drone(self)
+        print("All drones were removed.")
 
 
 class Drone():
@@ -113,7 +120,7 @@ class Drone():
             self.alive = False
             self.parent_swarm.drone_takedown(self)
             self.parent_swarm.cell_probabilities.appendleft(self.goal)
-            print(f"DRONE was taken down while entering {next_node} , on its way to {self.goal}, {self.goal} is added to searching list again. ")
+            print(f"DRONE was taken down while entering {next_node} , on its way to {self.goal}")
             return False
 
 
@@ -130,7 +137,7 @@ class Drone():
                 self.route_length -= 1
                 found= self.move_next(to_x_y)
                 self.parent_swarm.to_available(self)
-                print(f"Drone {self.number} has become available again")
+                # print(f"Drone {self.number} has become available again")
                 return found
             else:
                 to_x_y = self.route.popleft()

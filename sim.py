@@ -3,8 +3,6 @@ from drone import Drone, Swarm
 import numpy as np
 import sys, time
 from game_config import HIDING_STRATEGY,WIDTH,HEIGHT,NUMBER_OF_DRONES_IN_SWARM,NUMBER_OF_RISK_LOCATIONS,RISKY_AREA_P,DRONE_SYMBOL,NUMBER_OF_HIDERS
-from collections import deque
-from itertools import permutations
 import networkx as nx
 from helpers import get_optimal_permutation_MD
 
@@ -14,15 +12,15 @@ class Simulation():
     def __init__(self,n_runs=1):
         self.runs = n_runs
         self.board= Board(width=WIDTH, height=HEIGHT, n_hiders=NUMBER_OF_HIDERS,n_risks=NUMBER_OF_RISK_LOCATIONS, takedown_chance=RISKY_AREA_P)
-        self.swarm = Swarm(self.board,size=NUMBER_OF_DRONES_IN_SWARM,symbol=DRONE_SYMBOL)
         self.board.hide(hider = "#", tactic=HIDING_STRATEGY)
+        # self.swarm = Swarm(self.board,size=NUMBER_OF_DRONES_IN_SWARM,symbol=DRONE_SYMBOL)
         self.board.print_board()
         self.board.plot_q_heatmap()
         self.rw_results = np.array(n_runs)
 
 
     def run_random_walk(self, plot_boards=True, plot_interval=0.2):
-        swarm = self.swarm
+        swarm = Swarm(self.board,size=NUMBER_OF_DRONES_IN_SWARM,symbol=DRONE_SYMBOL)
         for i in range(self.runs):
             found = False
             r = 0
@@ -37,20 +35,18 @@ class Simulation():
                     self.board.print_board()
                     sys.stdout.flush()
                     time.sleep(plot_interval)
-                # print(f"Step: {i}")
             if found:
                 print("Target was found")
             print(f"Took {r} steps and target was", "found" if found else "not found", f", {len(swarm.takenDown)} drones were taken down.")
+        swarm.remove_swarm()
 
     def together_traverse_best_permutation(self,plot_boards=True, plot_interval=0.2):
-        swarm = self.swarm
+        swarm = Swarm(self.board,size=NUMBER_OF_DRONES_IN_SWARM,symbol=DRONE_SYMBOL)
         graph = self.board.graph
         if not swarm.same_start:
             raise Exception(f"together_to_candidates not implemented yet for {swarm.init_strat}")
 
         board= self.board
-        found = False
-        r = 0
         if len(board.hider_candidates) == 0:
             return
 
@@ -58,10 +54,7 @@ class Simulation():
 
         hider_candidate_locations = [cell.loc for cell in board.hider_candidates]
 
-        optimal_path_sequence, shortest_total_distance = get_optimal_permutation_MD(
-            sample_drone.start,
-            hider_candidate_locations
-        )
+        optimal_path_sequence, shortest_total_distance = get_optimal_permutation_MD(sample_drone.start,hider_candidate_locations)
 
         route = []
 
@@ -69,13 +62,58 @@ class Simulation():
             new_route = (nx.shortest_path(graph, source=optimal_path_sequence[i], target=optimal_path_sequence[i+1]))
             route.extend(new_route[1:])
 
+        self._run_traversal_loop_swarm(swarm, route, plot_boards, plot_interval, scanner_traversal=False)
+        swarm.remove_swarm()
+        pass
+
+    def horizontal_scan_traversal_swarm(self, plot_boards=True, plot_interval=0.2):
+        swarm = Swarm(self.board,size=NUMBER_OF_DRONES_IN_SWARM,symbol=DRONE_SYMBOL)
+        if not swarm.same_start:
+            raise Exception(f"together_to_candidates not implemented yet for {swarm.init_strat}")
+
+        route = []
+
+        for y in range(self.board.height):
+            if y % 2:
+                for x in range(self.board.width - 1, -1, -1):
+                    route.append((x, y))
+            else:
+                for x in range(self.board.width):
+                    route.append((x, y))
+
+        self._run_traversal_loop_swarm(swarm,route,plot_boards,plot_interval,scanner_traversal=True)
+        swarm.remove_swarm()
+        pass
+
+    def vertical_scan_traversal_swarm(self,plot_boards=True, plot_interval=0.2):
+        swarm = Swarm(self.board,size=NUMBER_OF_DRONES_IN_SWARM,symbol=DRONE_SYMBOL)
+        if not swarm.same_start:
+            raise Exception(f"together_to_candidates not implemented yet for {swarm.init_strat}")
+
+        route = []
+
+        for y in range(self.board.height):
+            if y%2:
+                for x in range(self.board.width-1,-1,-1):
+                    route.append((y,x))
+            else:
+                for x in range(self.board.width):
+                    route.append((y,x))
+
+        self._run_traversal_loop_swarm(swarm,route,plot_boards,plot_interval,scanner_traversal=True)
+        swarm.remove_swarm()
+        pass
+
+    def _run_traversal_loop_swarm(self,swarm,route,plot_boards=False,plot_interval=0.2,scanner_traversal=False):
+        found = False
+        r = 0
+        len_route = len(route)
 
         for drone in swarm.swarm:
             drone.set_route(route)
             swarm.to_unavailable(drone)
 
         while not found and not len(swarm.takenDown) == swarm.size:
-
             for drone in swarm.swarm:
                 if drone.move_next_from_route():
                     found = True
@@ -89,17 +127,23 @@ class Simulation():
             if found:
                 break
             r += 1
-
+            if r == len_route and scanner_traversal:
+                print("Nothing was found")
+                break
 
         print(f"Took {r} steps and target was", "found" if found else "not found",
               f"{len(swarm.takenDown)} drones were taken down.")
 
 
-    def horizontal_scan_traversal_swarm(self,plot_boards=True, plot_interval=0.2):
-        swarm = self.swarm
         pass
 
-    def run_aStarBased_strategy(self,plot_boards=True, plot_interval=0.2):
+
+
+
+
+
+
+    def run_dijkstraBased_strategy(self,plot_boards=True, plot_interval=0.2):
         swarm = self.swarm
         for i in range(self.runs):
             found = False
@@ -129,7 +173,6 @@ class Simulation():
                 for drone in swarm.swarm:
                     if drone.move_next_from_route():
                         found = True
-                        # print(f"\nTarget found by Drone {drone.number} at location {drone.current_loc}!")
                 if plot_boards:
                     sys.stdout.write("\033[H\033[J")
                     self.board.print_board()

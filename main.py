@@ -11,9 +11,7 @@ Niet diagonaal
 
 #TODO
     - Nieuwe strategieën implementeren
-        - gehele swarm: Horizontal scan, vertical scan
-        - verdeelde Horizontal scan, verticial scan
-        - Gehele swarm: beste route permutatie
+        - verdeelde Horizontal scan, vertical scan
         - Verdeeld naar locaties
     - Data verzamelen
 """
@@ -38,9 +36,14 @@ Niet diagonaal
 
 
 def main():
+
     sim = Simulation()
-    # sim.run_random_walk(plot_boards=False)
-    sim.together_traverse_best_permutation()
+    # sim.vertical_scan_traversal_swarm(plot_boards=True)
+    # sim.horizontal_scan_traversal_swarm(plot_boards=False)
+    sim.together_traverse_best_permutation(plot_boards=True)
+    sim.together_traverse_best_permutation(plot_boards=True)
+    sim.together_traverse_best_permutation(plot_boards=True)
+    # sim.run_random_walk(plot_boards=True)
     # sim.run_aStarBased_strategy(plot_boards=True, plot_interval=.2 )
 #
 
