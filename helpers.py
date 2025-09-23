@@ -1,4 +1,5 @@
 from itertools import permutations
+import numpy as np
 def manhattan_distance(p1, p2):
     x1, y1 = p1
     x2, y2 = p2
@@ -26,6 +27,15 @@ def get_optimal_permutation_MD(start_point, target_points):
             # print(f"optimal_permutation:{optimal_permutation}")
     return optimal_permutation, shortest_distance
 
+
+def confidence_interval(mean, var, Nruns):
+    zalpha2 = 1.96
+    half_width = zalpha2 * np.sqrt(var)/np.sqrt(Nruns)
+    ci = (mean - half_width, mean + half_width)
+    return ci
+
+def mean_var(array):
+    return np.mean(array), np.var(array)
 
 
 # A = (0,0)

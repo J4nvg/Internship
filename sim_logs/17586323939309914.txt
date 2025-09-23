@@ -1,0 +1,5 @@
+1. Steps: 4, Found: True, Taken down:0 
+2. Steps: 18, Found: True, Taken down:1 
+3. Steps: 11, Found: True, Taken down:1 
+4. Steps: 12, Found: True, Taken down:0 
+5. Steps: 14, Found: True, Taken down:1 

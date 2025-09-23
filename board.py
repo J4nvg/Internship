@@ -144,12 +144,12 @@ class Board():
             index = np.argmax(qs)
             chosen_cell = flat[index]
             chosen_cell.set_hider()
-            print(f"{hider} in cell {chosen_cell.loc} with {chosen_cell.q}")
+            # print(f"{hider} in cell {chosen_cell.loc} with {chosen_cell.q}")
 
         elif tactic == "weighted":
             chosen_cell = np.random.choice(flat,p=qs)
             chosen_cell.set_hider()
-            print(f"{hider} in cell {chosen_cell.loc} with {chosen_cell.q} even though max q was {np.max(qs)}")
+            # print(f"{hider} in cell {chosen_cell.loc} with {chosen_cell.q} even though max q was {np.max(qs)}")
         self.hider = chosen_cell.loc
 
 

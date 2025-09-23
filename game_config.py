@@ -20,7 +20,7 @@ NUMBER_OF_RISK_LOCATIONS = round(WIDTH*HEIGHT*RISKY_AREA_FRAC)
 
 ### Hider Settings ###
 FULL_BOARD_HIDING = False
-NUMBER_OF_HIDERS = 2
+NUMBER_OF_HIDERS = 3
 HIDING_STRATEGY = "weighted" # greedy | weighted
 
 
