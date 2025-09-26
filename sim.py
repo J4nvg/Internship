@@ -54,16 +54,22 @@ class Simulation():
         match tactic:
             case "ttbp":
                 strat = self.together_traverse_best_permutation
+                tactic = "Together Traverse Best Permutation"
             case "dor":
                 strat = self.divide_over_risks
+                tactic = "divide_over_risks"
             case "rndm":
                 strat = self.run_random_walk
+                tactic = "random_walk"
             case "hs":
                 strat = self.horizontal_scan_traversal_swarm
+                tactic = "horizontal_scan_traversal"
             case "phs":
                 strat = self.partitioned_horizontal_scan_traversal
+                tactic = "partitioned_horizontal_scan_traversal"
             case "vs":
                 strat = self.vertical_scan_traversal_swarm
+                tactic = "vertical_scan_traversal"
             case _:
                 raise ValueError("Invalid tactic")
 
@@ -298,7 +304,6 @@ class Simulation():
         for row, num_drones in drone_start_rows.items():
             for _ in range(num_drones):
                 drone_to_start_row.append(row)
-        print(drone_to_start_row)
         for i, drone in enumerate(swarm.swarm):
             if i < len(drone_to_start_row):
                 start_row = drone_to_start_row[i]
@@ -314,9 +319,7 @@ class Simulation():
                 final_route = start_path + full_route[start_path_index:]
                 drone.set_route(final_route)
                 swarm.to_unavailable(drone)
-                print(f"Drone {i} assigned route starting at row {start_row}")
 
-        print(drone_start_rows)
         return self._run_traversal_loop_individual(swarm, plot_boards, plot_interval)
 
     def partitioned_vertical_scan_traversal(self, plot_boards=True, plot_interval=0.2):
