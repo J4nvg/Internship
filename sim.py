@@ -1,12 +1,17 @@
+from scipy.odr import odr_error
+from functools import cache
 from board import Board
 from drone import Drone, Swarm
 import numpy as np
 import sys, time
 from game_config import HIDING_STRATEGY,WIDTH,HEIGHT,NUMBER_OF_DRONES_IN_SWARM,NUMBER_OF_RISK_LOCATIONS,RISKY_AREA_P,DRONE_SYMBOL,NUMBER_OF_HIDERS
 import networkx as nx
-from helpers import get_optimal_permutation_MD, mean_var, confidence_interval
+from helpers import get_optimal_permutation_MD, mean_var, confidence_interval, min_max, get_all_stats, \
+    get_whole_and_remainder
 from tqdm import tqdm
 import time
+import pandas as pd
+from itertools import cycle
 
 class Simulation():
 
@@ -23,6 +28,7 @@ class Simulation():
     def set_board(self):
         self.board = Board(width=WIDTH, height=HEIGHT, n_hiders=NUMBER_OF_HIDERS,n_risks=NUMBER_OF_RISK_LOCATIONS, takedown_chance=RISKY_AREA_P)
         self.board.hide(hider = "#", tactic=HIDING_STRATEGY)
+
         # self.board.print_board()
 
     def save_data(self,i,steps,found,taken_down,filename=''):
@@ -34,47 +40,80 @@ class Simulation():
                 f.write(f"{i+1}. Steps: {steps}, Found: {found}, Taken down:{taken_down} \n")
 
 
-    def start_main_sim_loop_single_tactic_metrics(self,plot_boards=False):
+    def start_main_sim_loop_single_tactic_metrics(self,plot_boards=False,tactic="ttbp"):
+
+        match tactic:
+            case "ttbp":
+                strat = self.together_traverse_best_permutation
+            case "dor":
+                strat = self.divide_over_risks
+            case "rndm":
+                strat = self.run_random_walk
+            case "hs":
+                strat = self.horizontal_scan_traversal_swarm
+            case "vs":
+                strat = self.vertical_scan_traversal_swarm
+            case _:
+                raise ValueError("Invalid tactic")
+
         filename = ''
+
         if self.log:
             filename = str(time.time()).replace('.','')
-            filename = f"./sim_logs/{filename}.txt"
+            filename = f"./sim_logs/{tactic}_{filename}.txt"
+
         if not plot_boards:
             for i in tqdm(range(self.runs)):
                 self.set_board()
-                steps,found,taken_down = self.together_traverse_best_permutation(plot_boards=plot_boards)
+                steps,found,taken_down = strat(plot_boards=plot_boards)
                 self.save_data(i,steps,found,taken_down,filename)
         else:
             for i in range(self.runs):
                 self.set_board()
-                steps,found,taken_down = self.together_traverse_best_permutation(plot_boards=plot_boards)
+                steps,found,taken_down = strat(plot_boards=plot_boards)
                 self.save_data(i, steps, found, taken_down,filename)
-        self.get_stats()
+        self.get_stats(tactic)
 
-    def get_stats(self):
-        findsteps_mu, findsteps_var = mean_var(self.find_steps)
-        findsteps_ci = confidence_interval(findsteps_mu, findsteps_var,self.runs)
+    def get_stats(self,tactic):
 
-        print("Find steps mean:",findsteps_mu,"\n find steps var:",findsteps_var,"\n find steps ci:",findsteps_ci[0],findsteps_ci[1])
-        print("Half width",findsteps_ci[1]-findsteps_mu)
+        print(f"Game stats for: {tactic}, nruns: {self.runs}")
+        print(f"grid_w: {WIDTH}, grid_h {HEIGHT}, swarm_size {NUMBER_OF_DRONES_IN_SWARM}")
+        print("Hider candidate cells: ")
+        for cell in self.board.risks:
+            print(f"{cell.loc}, Risk in cell: {cell.p:.2f}, Hiding chance: {cell.q:.2f} {"< Hidden here" if cell.contains_hider else ""}")
 
 
-        takendown_mu, takendown_var = mean_var(self.taken_down)
-        takendown_ci = confidence_interval(takendown_mu, takendown_var,self.runs)
-        print("\n Taken_down mean:",takendown_mu,"\n Taken_down var:",takendown_var,"\n Taken_down ci:",takendown_ci[0],takendown_ci[1])
-        print("Half width",takendown_ci[1]-takendown_mu)
+        metrics_find = get_all_stats(self.find_steps,self.runs)
+        metrics_taken_down = get_all_stats(self.taken_down,self.runs)
+        table = pd.DataFrame([metrics_find,metrics_taken_down], index=["find_steps","taken_down"])
+        print("\n",table)
+
+
+        print("\n Found percentage")
+        found = self.found
+        print(np.sum(found)/len(found)*100,"%")
+
+
+
+        # epsilon = 0.01
+        # numRuns = int(np.ceil((1.96 * np.std(self.find_steps) / epsilon) ** 2))
+        # print("Minimum required simulations for find_steps:", numRuns)
+        #
+        # numRuns = int(np.ceil((1.96 * np.std(self.taken_down) / epsilon) ** 2))
+        # print("Minimum required simulations for find_steps:", numRuns)
+
         return
 
 
     def run_random_walk(self, plot_boards=True, plot_interval=0.2):
         swarm = Swarm(self.board,size=NUMBER_OF_DRONES_IN_SWARM,symbol=DRONE_SYMBOL)
         found = False
-        r = 0
+        steps = 0
         for drone in swarm.swarm:
             if drone.move_next(swarm.swarm[0].start):
                 found=True
         while (not found and not len(swarm.takenDown) == swarm.size):
-            r += 1
+            steps += 1
             for drone in swarm.swarm:
                 if drone.random_move():
                     found = True
@@ -84,10 +123,9 @@ class Simulation():
                 self.board.print_board()
                 sys.stdout.flush()
                 time.sleep(plot_interval)
-        # if found:
-        #     print("Target was found")
+
         # print(f"Took {r} steps and target was", "found" if found else "not found", f", {len(swarm.takenDown)} drones were taken down.")
-        return r,found,len(swarm.takenDown)
+        return steps,found,len(swarm.takenDown)
 
 
     def together_traverse_best_permutation(self,plot_boards=True, plot_interval=0.2):
@@ -115,6 +153,78 @@ class Simulation():
         return self._run_traversal_loop_swarm(swarm, route, plot_boards, plot_interval, scanner_traversal=False)
 
 
+    def divide_over_risks(self,plot_boards=True, plot_interval=0.2):
+        swarm = Swarm(self.board,size=NUMBER_OF_DRONES_IN_SWARM,symbol=DRONE_SYMBOL)
+        graph = self.board.graph
+        if not swarm.same_start:
+            raise Exception(f"together_to_candidates not implemented yet for {swarm.init_strat}")
+        board = self.board
+
+        if len(board.hider_candidates) == 0:
+            return 0, 0 ,0
+
+        sorted_risk_cells = sorted(board.hider_candidates, key=lambda cell: cell.p, reverse=True)
+        ordered_risk_p = np.array([cell.p for cell in sorted_risk_cells])
+        sorted_risk_cells = [cell.loc for cell in sorted_risk_cells]
+
+        total_risk = np.sum(ordered_risk_p)
+        proportional_risks = ordered_risk_p / total_risk
+
+        n_drones = NUMBER_OF_DRONES_IN_SWARM
+
+        allocations = proportional_risks * n_drones
+
+        drone_assignments = np.floor(allocations).astype(int)
+
+
+        remainder = n_drones - np.sum(drone_assignments)
+        # Since floored we have a remainder
+
+        fractional_parts = allocations - drone_assignments
+        # get the fractional parts, i.e. 7.44 - floored = .44
+
+        indices_for_remainder = np.argsort(fractional_parts)[::-1]
+        # Sort such that we get the index for biggest fractional part in idx 0 of this list
+        # Distribute remaining drones over these fractional parts
+        # Alternative implementation: Distribute remainders over risk cells starting at the one with the highest risk.
+        # Bc. highest fractional remainder does not necesarily mean highest risk
+
+
+        for i in range(remainder):
+            drone_assignments[indices_for_remainder[i]] += 1
+
+        drone_pool = list(swarm.available)
+
+        current_drone_idx = 0
+
+
+        for i, num_to_assign in enumerate(drone_assignments):
+            target_loc = sorted_risk_cells[i]
+
+            chain = sorted_risk_cells[i:] + sorted_risk_cells[:i]
+            drones_for_this_target = drone_pool[current_drone_idx : current_drone_idx + num_to_assign]
+
+            current_drone_idx += num_to_assign
+
+            c = 1
+            for drone in drones_for_this_target:
+                swarm.to_unavailable(drone)
+
+                route = [drone.start]
+                if plot_boards:
+                    print(f"allocating {drone} to {target_loc}, {c}/{num_to_assign}, {ordered_risk_p[i]}")
+
+                for checkpoint in chain:
+                    new_route = (nx.shortest_path(graph, source=route[-1], target=checkpoint))
+                    route.extend(new_route[1:])
+                drone.set_route(route)
+                c+=1
+        if plot_boards:
+            time.sleep(2)
+        return self._run_traversal_loop_individual(swarm,plot_boards, plot_interval)
+
+
+
     def horizontal_scan_traversal_swarm(self, plot_boards=True, plot_interval=0.2):
         swarm = Swarm(self.board,size=NUMBER_OF_DRONES_IN_SWARM,symbol=DRONE_SYMBOL)
         if not swarm.same_start:
@@ -131,6 +241,22 @@ class Simulation():
                     route.append((x, y))
 
         return self._run_traversal_loop_swarm(swarm,route,plot_boards,plot_interval,scanner_traversal=True)
+
+
+    def partitioned_horizontal_scan_traversal(self, plot_boards=True, plot_interval=0.2):
+        swarm = Swarm(self.board,size=NUMBER_OF_DRONES_IN_SWARM,symbol=DRONE_SYMBOL)
+        rows_per_drone, remainder_rows = get_whole_and_remainder(self.board.height, NUMBER_OF_DRONES_IN_SWARM)
+
+        pass
+
+
+    def partitioned_vertical_scan_traversal(self, plot_boards=True, plot_interval=0.2):
+        swarm = Swarm(self.board,size=NUMBER_OF_DRONES_IN_SWARM,symbol=DRONE_SYMBOL)
+        cols_per_drone, remainder_cols = get_whole_and_remainder(self.board.width,NUMBER_OF_DRONES_IN_SWARM)
+
+
+        pass
+
 
 
     def vertical_scan_traversal_swarm(self,plot_boards=True, plot_interval=0.2):
@@ -152,7 +278,7 @@ class Simulation():
 
     def _run_traversal_loop_swarm(self,swarm,route,plot_boards=False,plot_interval=0.2,scanner_traversal=False):
         found = False
-        r = 0
+        steps = 1
         len_route = len(route)
 
         for drone in swarm.swarm:
@@ -172,16 +298,44 @@ class Simulation():
 
             if found:
                 break
-            r += 1
-            if r == len_route and scanner_traversal:
+            steps += 1
+            if steps == len_route and scanner_traversal:
                 # print("Nothing was found")
                 break
 
         # print(f"Took {r} steps and target was", "found" if found else "not found",
         #       f"{len(swarm.takenDown)} drones were taken down.")
 
+        # self.board.plot_drone_trajectory_animated(swarm=swarm,id=1)
         swarm.remove_swarm()
-        return r,found,len(swarm.takenDown)
+        return steps,found,len(swarm.takenDown)
+
+    def _run_traversal_loop_individual(self,swarm,plot_boards=False,plot_interval=0.2):
+        found = False
+        steps = 1
+
+        while not found and not len(swarm.takenDown) == swarm.size:
+            for drone in swarm.swarm:
+                if drone.move_next_from_route():
+                    found = True
+                    # print(f"\nTarget found by Drone {drone.number} at location {drone.current_loc}!")
+            if plot_boards:
+                sys.stdout.write("\033[H\033[J")
+                self.board.print_board()
+                sys.stdout.flush()
+                time.sleep(plot_interval)
+
+            if found:
+                break
+            steps += 1
+
+        # print(f"Took {r} steps and target was", "found" if found else "not found",
+        #       f"{len(swarm.takenDown)} drones were taken down.")
+
+        # self.board.plot_drone_trajectory_animated(swarm=swarm,id=1)
+        # self.board.plot_risk_heatmap()
+        swarm.remove_swarm()
+        return steps,found,len(swarm.takenDown)
 
 
     def run_dijkstraBased_strategy(self,plot_boards=True, plot_interval=0.2):

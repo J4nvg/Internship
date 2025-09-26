@@ -1,8 +1,8 @@
 from csv import excel
 import numpy as np
 
-from drone import Drone
-from game_config import RANDOM_RISK_ALLOCATION, FULL_BOARD_HIDING, RISKY_AREA_P, NUMBER_OF_HIDERS
+from game_config import RANDOM_RISK_ALLOCATION, FULL_BOARD_HIDING, RISKY_AREA_P, NUMBER_OF_HIDERS, STATIC_RISK
+from helpers import random_risk
 from sampler import Dist
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -56,14 +56,12 @@ class Board():
         self.width = width
         self.height = height
         self.n_hiders = n_hiders
-
+        self.risks = set()
 
         if FULL_BOARD_HIDING:
             self.dist = Dist(size=width*height,alpha=dirichlet_alpha)
         elif n_hiders>0:
             self.dist = Dist(size=n_hiders,alpha=dirichlet_alpha)
-
-
 
 
         self.board = self.create_board()
@@ -76,7 +74,6 @@ class Board():
         self.id = id
 
         if RANDOM_RISK_ALLOCATION:
-            self.risks = set()
             self.set_spread_over_board_risks(n=n_risks,p=takedown_chance)
 
         self.graph = self.to_graph()
@@ -106,7 +103,8 @@ class Board():
     def add_drone_to_board(self,drone,s):
         x,y = s
         # print(f"Placing drone on (x:{x},y:{y})")
-        # self.board[y,x].add_drone(drone)
+        target_cell =  self.board[y,x]
+        target_cell.add_drone(drone)
         return
 
     def set_spread_over_board_risks(self,n,p):
@@ -130,7 +128,11 @@ class Board():
                 cell = np.random.choice(available_cells)
                 self.hider_candidates.add(cell)
                 cell.set_hiding_chance(self.dist.sample())
-                cell.set_risk(RISKY_AREA_P)
+                if STATIC_RISK:
+                    cell.set_risk(RISKY_AREA_P)
+                else:
+                    cell.set_risk(random_risk())
+                self.risks.add(cell)
         return
 
     def hide(self,hider,tactic="greedy"):
@@ -139,17 +141,20 @@ class Board():
         flat = self.board.flatten()
         qs = np.array([cell.q for cell in flat])
         chosen_cell = None
+
         if tactic == "greedy":
-            #     Return cell with highest probability
             index = np.argmax(qs)
             chosen_cell = flat[index]
             chosen_cell.set_hider()
-            # print(f"{hider} in cell {chosen_cell.loc} with {chosen_cell.q}")
 
         elif tactic == "weighted":
             chosen_cell = np.random.choice(flat,p=qs)
             chosen_cell.set_hider()
-            # print(f"{hider} in cell {chosen_cell.loc} with {chosen_cell.q} even though max q was {np.max(qs)}")
+
+        elif tactic == "debug_corner":
+            chosen_cell = flat[0]
+            chosen_cell.set_hider()
+
         self.hider = chosen_cell.loc
 
 

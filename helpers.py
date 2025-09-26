@@ -1,5 +1,8 @@
 from itertools import permutations
 import numpy as np
+from game_config import RISK_CHANCES, RANDOM_SEED
+
+
 def manhattan_distance(p1, p2):
     x1, y1 = p1
     x2, y2 = p2
@@ -37,16 +40,29 @@ def confidence_interval(mean, var, Nruns):
 def mean_var(array):
     return np.mean(array), np.var(array)
 
+def min_max(array):
+    return np.min(array), np.max(array)
 
-# A = (0,0)
-# B = (2,3)
-# C = (1,1)
-# D = (4,1)
-# #
-# print(list(permutations([A,B,C,D])))
-# print(get_optimal_permutations_MD(list(permutations([A,B,C,D]))))
-#
-# print(manhattan_distance((0,0),(1,1)))
-# print(manhattan_distance((1,1),(2,4)))
-#
-# print(total_manhattan_distance_list([(0,0),(1,1),(2,4)]))
+def get_all_stats(array,Nruns):
+    mi,ma = min_max(array)
+    mu,var = mean_var(array)
+    ci = confidence_interval(mu, var, Nruns)
+    return {
+            "min": mi,
+            "max": ma,
+            "mean": mu,
+            "var": var,
+            "ci_lower": ci[0],
+            "ci_upper": ci[1],
+            "Half_width": ci[1]-mu,
+        }
+
+
+def get_whole_and_remainder(size,divided_by):
+    whole = size // divided_by
+    remainder = size % divided_by
+    return whole,remainder
+
+
+def random_risk():
+    return np.random.choice(RISK_CHANCES)

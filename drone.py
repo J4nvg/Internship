@@ -132,7 +132,8 @@ class Drone():
 
     def move_next_from_route(self):
         if self.alive:
-
+            if self.route_length <1:
+                return False
             if self.route_length == 1:
                 to_x_y = self.route.popleft()
                 self.route_length -= 1
