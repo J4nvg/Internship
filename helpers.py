@@ -1,6 +1,6 @@
 from itertools import permutations
 import numpy as np
-from game_config import RISK_CHANCES, RANDOM_SEED
+from game_config import RISK_CHANCES
 
 
 def manhattan_distance(p1, p2):
