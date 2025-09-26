@@ -13,6 +13,12 @@ import time
 import pandas as pd
 from itertools import cycle
 
+@cache
+def get_all_paths(width,height):
+    board = Board(width=width, height=height, n_hiders=0, n_risks=0, takedown_chance=0)
+    return dict(nx.all_pairs_shortest_path(board.graph))
+
+
 class Simulation():
 
     def __init__(self,n_runs=1,log=False):
@@ -24,11 +30,14 @@ class Simulation():
         self.find_steps = np.zeros(n_runs)
         self.taken_down = np.zeros(n_runs)
         self.found = np.zeros(n_runs)
+        self.all_paths = None
+
 
     def set_board(self):
         self.board = Board(width=WIDTH, height=HEIGHT, n_hiders=NUMBER_OF_HIDERS,n_risks=NUMBER_OF_RISK_LOCATIONS, takedown_chance=RISKY_AREA_P)
         self.board.hide(hider = "#", tactic=HIDING_STRATEGY)
-
+        if self.runs > 10:
+            self.all_paths = get_all_paths(WIDTH, HEIGHT)
         # self.board.print_board()
 
     def save_data(self,i,steps,found,taken_down,filename=''):
@@ -78,9 +87,9 @@ class Simulation():
 
         print(f"Game stats for: {tactic}, nruns: {self.runs}")
         print(f"grid_w: {WIDTH}, grid_h {HEIGHT}, swarm_size {NUMBER_OF_DRONES_IN_SWARM}")
-        print("Hider candidate cells: ")
-        for cell in self.board.risks:
-            print(f"{cell.loc}, Risk in cell: {cell.p:.2f}, Hiding chance: {cell.q:.2f} {"< Hidden here" if cell.contains_hider else ""}")
+        # print("Hider candidate cells: ")
+        # for cell in self.board.risks:
+        #     print(f"{cell.loc}, Risk in cell: {cell.p:.2f}, Hiding chance: {cell.q:.2f} {"< Hidden here" if cell.contains_hider else ""}")
 
 
         metrics_find = get_all_stats(self.find_steps,self.runs)
@@ -147,7 +156,10 @@ class Simulation():
         route = [sample_drone.start]
 
         for i in range(len(optimal_path_sequence) - 1):
-            new_route = (nx.shortest_path(graph, source=optimal_path_sequence[i], target=optimal_path_sequence[i+1]))
+            if (self.all_paths):
+                new_route = self.all_paths[optimal_path_sequence[i]][optimal_path_sequence[i+1]]
+            else:
+                new_route = (nx.shortest_path(graph, source=optimal_path_sequence[i], target=optimal_path_sequence[i+1]))
             route.extend(new_route[1:])
 
         return self._run_traversal_loop_swarm(swarm, route, plot_boards, plot_interval, scanner_traversal=False)
@@ -215,7 +227,10 @@ class Simulation():
                     print(f"allocating {drone} to {target_loc}, {c}/{num_to_assign}, {ordered_risk_p[i]}")
 
                 for checkpoint in chain:
-                    new_route = (nx.shortest_path(graph, source=route[-1], target=checkpoint))
+                    if(self.all_paths):
+                        new_route = self.all_paths[route[-1]][checkpoint]
+                    else:
+                        new_route = (nx.shortest_path(graph, source=route[-1], target=checkpoint))
                     route.extend(new_route[1:])
                 drone.set_route(route)
                 c+=1
@@ -338,47 +353,47 @@ class Simulation():
         return steps,found,len(swarm.takenDown)
 
 
-    def run_dijkstraBased_strategy(self,plot_boards=True, plot_interval=0.2):
-        swarm = self.swarm
-        for i in range(self.runs):
-            found = False
-            r = 0
-            while (not found and not len(swarm.takenDown) == swarm.size):
-                for i in range(len(swarm.available)):
-                    if not swarm.cell_probabilities:
-                        break
-                    target = swarm.cell_probabilities.popleft()
-                    shortest_path = []
-                    shortest_path_length = float("inf")
-                    going = None
-                    for drone in swarm.available:
-                        drone_path = drone.get_route_to_goal(target)
-                        drone_path_length = len(drone_path)
-                        if drone_path_length < shortest_path_length:
-                            # print("Enther the loop")
-                            shortest_path = drone_path
-                            shortest_path_length = drone_path_length
-                            going = drone
-                            # print(going.number," has shorter path to", target)
-
-                    print(going.number," Has now set target to: ", target)
-                    going.set_route(shortest_path,route_length=shortest_path_length)
-                    swarm.to_unavailable(going)
-
-                for drone in swarm.swarm:
-                    if drone.move_next_from_route():
-                        found = True
-                if plot_boards:
-                    sys.stdout.write("\033[H\033[J")
-                    self.board.print_board()
-                    sys.stdout.flush()
-                    time.sleep(plot_interval)
-
-                if found:
-                    break
-                r+= 1
-
-            print(f"Took {r} steps and target was", "found" if found else "not found", f"{len(swarm.takenDown)} drones were taken down.")
-        pass
+    # def run_dijkstraBased_strategy(self,plot_boards=True, plot_interval=0.2):
+    #     swarm = self.swarm
+    #     for i in range(self.runs):
+    #         found = False
+    #         r = 0
+    #         while (not found and not len(swarm.takenDown) == swarm.size):
+    #             for i in range(len(swarm.available)):
+    #                 if not swarm.cell_probabilities:
+    #                     break
+    #                 target = swarm.cell_probabilities.popleft()
+    #                 shortest_path = []
+    #                 shortest_path_length = float("inf")
+    #                 going = None
+    #                 for drone in swarm.available:
+    #                     drone_path = drone.get_route_to_goal(target)
+    #                     drone_path_length = len(drone_path)
+    #                     if drone_path_length < shortest_path_length:
+    #                         # print("Enther the loop")
+    #                         shortest_path = drone_path
+    #                         shortest_path_length = drone_path_length
+    #                         going = drone
+    #                         # print(going.number," has shorter path to", target)
+    #
+    #                 print(going.number," Has now set target to: ", target)
+    #                 going.set_route(shortest_path,route_length=shortest_path_length)
+    #                 swarm.to_unavailable(going)
+    #
+    #             for drone in swarm.swarm:
+    #                 if drone.move_next_from_route():
+    #                     found = True
+    #             if plot_boards:
+    #                 sys.stdout.write("\033[H\033[J")
+    #                 self.board.print_board()
+    #                 sys.stdout.flush()
+    #                 time.sleep(plot_interval)
+    #
+    #             if found:
+    #                 break
+    #             r+= 1
+    #
+    #         print(f"Took {r} steps and target was", "found" if found else "not found", f"{len(swarm.takenDown)} drones were taken down.")
+    #     pass
 
     # def
