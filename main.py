@@ -16,24 +16,32 @@ Set of Assumptions:
     - E.v.t. realtime plots
 
 
-
-
 valid tactics:
 
+Swarm together:
 "ttbp" - Together Traverse Best Permutation
-"dor" - Divide over Risk
 "rndm" - Random walk
 "hs" - Horizontal scan
 "vs" - Vertical scan
 
+Swarm split:
+"dor" - Divide over Risk
+"phs" - Partitioned Horizontal scan
 """
 
 
 def main():
 
-    sim = Simulation(n_runs=10,log=False)
-    sim.start_main_sim_loop_single_tactic_metrics(plot_boards=False ,tactic="ttbp")
-
+    sim = Simulation(n_runs=1_000,log=False)
+    sim.start_main_sim_loop_single_tactic_metrics(plot_boards=False,tactic="ttbp")
+    sim = Simulation(n_runs=1_000,log=False)
+    sim.start_main_sim_loop_single_tactic_metrics(plot_boards=False,tactic="hs")
+    sim = Simulation(n_runs=1_000,log=False)
+    sim.start_main_sim_loop_single_tactic_metrics(plot_boards=False,tactic="phs")
+    sim = Simulation(n_runs=1_000,log=False)
+    sim.start_main_sim_loop_single_tactic_metrics(plot_boards=False,tactic="dor")
+    sim = Simulation(n_runs=1_000,log=False)
+    sim.start_main_sim_loop_single_tactic_metrics(plot_boards=False,tactic="rndm")
 
 
 if __name__ == "__main__":

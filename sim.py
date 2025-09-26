@@ -60,6 +60,8 @@ class Simulation():
                 strat = self.run_random_walk
             case "hs":
                 strat = self.horizontal_scan_traversal_swarm
+            case "phs":
+                strat = self.partitioned_horizontal_scan_traversal
             case "vs":
                 strat = self.vertical_scan_traversal_swarm
             case _:
@@ -257,13 +259,65 @@ class Simulation():
 
         return self._run_traversal_loop_swarm(swarm,route,plot_boards,plot_interval,scanner_traversal=True)
 
+    def partitioned_horizontal_scan_traversal(self, plot_boards=True, plot_interval=0.1):
+        swarm = Swarm(self.board, size=NUMBER_OF_DRONES_IN_SWARM, symbol=DRONE_SYMBOL, init_strat="top-left")
 
-    def partitioned_horizontal_scan_traversal(self, plot_boards=True, plot_interval=0.2):
-        swarm = Swarm(self.board,size=NUMBER_OF_DRONES_IN_SWARM,symbol=DRONE_SYMBOL)
-        rows_per_drone, remainder_rows = get_whole_and_remainder(self.board.height, NUMBER_OF_DRONES_IN_SWARM)
+        snake_route_start_odd_row = []
+        snake_route_start_even_row = []
 
-        pass
+        for y in range(self.board.height):
+            if y % 2:
+                for x in range(self.board.width):
+                    snake_route_start_even_row.append((x, y))
+                for x in range(self.board.width - 1, -1, -1):
+                    snake_route_start_odd_row.append((x, y))
+            else:
+                for x in range(self.board.width - 1, -1, -1):
+                    snake_route_start_even_row.append((x, y))
+                for x in range(self.board.width):
+                    snake_route_start_odd_row.append((x, y))
 
+        drone_start_rows = {}
+
+        if swarm.size > self.board.height:
+            drones_per_row, remainder_drones = get_whole_and_remainder(swarm.size, self.board.height)
+            for y in range(self.board.height):
+                num_drones_for_this_row = drones_per_row + 1 if y < remainder_drones else drones_per_row
+                drone_start_rows[y] = num_drones_for_this_row
+        else:
+            rows_per_drone, remainder_rows = get_whole_and_remainder(self.board.height, swarm.size)
+            current_row = 0
+            for i in range(swarm.size):
+                drone_start_rows[current_row] = 1
+                spacing = rows_per_drone + 1 if i < remainder_rows else rows_per_drone
+                current_row += spacing
+                if current_row >= self.board.height:
+                    current_row = self.board.height - 1
+
+        drone_to_start_row = []
+        for row, num_drones in drone_start_rows.items():
+            for _ in range(num_drones):
+                drone_to_start_row.append(row)
+        print(drone_to_start_row)
+        for i, drone in enumerate(swarm.swarm):
+            if i < len(drone_to_start_row):
+                start_row = drone_to_start_row[i]
+
+                if start_row % 2 != 0:
+                    full_route = snake_route_start_even_row
+                else:
+                    full_route = snake_route_start_odd_row
+
+                start_path_index = start_row * self.board.width
+                start_path = [(0, y) for y in range(start_row + 1)]
+
+                final_route = start_path + full_route[start_path_index:]
+                drone.set_route(final_route)
+                swarm.to_unavailable(drone)
+                print(f"Drone {i} assigned route starting at row {start_row}")
+
+        print(drone_start_rows)
+        return self._run_traversal_loop_individual(swarm, plot_boards, plot_interval)
 
     def partitioned_vertical_scan_traversal(self, plot_boards=True, plot_interval=0.2):
         swarm = Swarm(self.board,size=NUMBER_OF_DRONES_IN_SWARM,symbol=DRONE_SYMBOL)
@@ -329,7 +383,7 @@ class Simulation():
         found = False
         steps = 1
 
-        while not found and not len(swarm.takenDown) == swarm.size:
+        while not found and ( not len(swarm.takenDown) == swarm.size and not len(swarm.done) + len(swarm.takenDown) == swarm.size) :
             for drone in swarm.swarm:
                 if drone.move_next_from_route():
                     found = True

@@ -11,6 +11,7 @@ class Swarm():
         self.size = size
         self.board = board
         self.swarm = []
+        self.done = set({})
         self.available = []
         self.takenDown = []
         self.temp_unavailable = []
@@ -133,6 +134,7 @@ class Drone():
     def move_next_from_route(self):
         if self.alive:
             if self.route_length <1:
+                self.parent_swarm.done.add(self)
                 return False
             if self.route_length == 1:
                 to_x_y = self.route.popleft()
