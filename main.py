@@ -1,7 +1,6 @@
 NX_CUGRAPH_AUTOCONFIG=True
 import timeit
 from sim import Simulation
-
 """
 Set of Assumptions:
 - Niet diagonaal bewegen
@@ -14,6 +13,12 @@ Set of Assumptions:
         - ++Verdeeld naar locaties
     - Plots maken
     - E.v.t. realtime plots
+    
+    -Stats:
+        - Total area of map covered
+        - Total distance covered
+        - Mean distance per drone covered
+        -  
 
 
 valid tactics:
@@ -31,17 +36,17 @@ Swarm split:
 
 
 def main():
-
-    sim = Simulation(n_runs=1_000,log=False)
-    sim.start_main_sim_loop_single_tactic_metrics(plot_boards=False,tactic="ttbp")
-    sim = Simulation(n_runs=1_000,log=False)
-    sim.start_main_sim_loop_single_tactic_metrics(plot_boards=False,tactic="hs")
-    sim = Simulation(n_runs=1_000,log=False)
-    sim.start_main_sim_loop_single_tactic_metrics(plot_boards=False,tactic="phs")
-    sim = Simulation(n_runs=1_000,log=False)
-    sim.start_main_sim_loop_single_tactic_metrics(plot_boards=False,tactic="dor")
-    sim = Simulation(n_runs=1_000,log=False)
-    sim.start_main_sim_loop_single_tactic_metrics(plot_boards=False,tactic="rndm")
+    n_runs = 2
+    sim = Simulation(n_runs=n_runs,log=False)
+    sim.start_main_sim_loop_single_tactic_metrics(plot_boards=True,tactic="ttbp")
+    # sim = Simulation(n_runs=n_runs,log=False)
+    # sim.start_main_sim_loop_single_tactic_metrics(plot_boards=True,tactic="hs")
+    sim = Simulation(n_runs=n_runs,log=False)
+    sim.start_main_sim_loop_single_tactic_metrics(plot_boards=True,tactic="phs")
+    sim = Simulation(n_runs=n_runs,log=False)
+    sim.start_main_sim_loop_single_tactic_metrics(plot_boards=True,tactic="dor")
+    # sim = Simulation(n_runs=5,log=False)
+    # sim.start_main_sim_loop_single_tactic_metrics(plot_boards=True,tactic="rndm")
 
 
 if __name__ == "__main__":

@@ -16,8 +16,8 @@ from itertools import cycle
 @cache
 def get_all_paths(width,height):
     board = Board(width=width, height=height, n_hiders=0, n_risks=0, takedown_chance=0)
-    return dict(nx.all_pairs_shortest_path(board.graph))
-
+    # return dict(nx.all_pairs_shortest_path(board.graph))
+    return 
 
 class Simulation():
 
@@ -36,7 +36,7 @@ class Simulation():
     def set_board(self):
         self.board = Board(width=WIDTH, height=HEIGHT, n_hiders=NUMBER_OF_HIDERS,n_risks=NUMBER_OF_RISK_LOCATIONS, takedown_chance=RISKY_AREA_P)
         self.board.hide(hider = "#", tactic=HIDING_STRATEGY)
-        if self.runs > 10:
+        if self.runs == -1:
             self.all_paths = get_all_paths(WIDTH, HEIGHT)
         # self.board.print_board()
 
@@ -49,7 +49,7 @@ class Simulation():
                 f.write(f"{i+1}. Steps: {steps}, Found: {found}, Taken down:{taken_down} \n")
 
 
-    def start_main_sim_loop_single_tactic_metrics(self,plot_boards=False,tactic="ttbp"):
+    def start_main_sim_loop_single_tactic_metrics(self,plot_boards=False, plot_interval = 0.2,tactic="ttbp"):
 
         match tactic:
             case "ttbp":
@@ -82,12 +82,12 @@ class Simulation():
         if not plot_boards:
             for i in tqdm(range(self.runs)):
                 self.set_board()
-                steps,found,taken_down = strat(plot_boards=plot_boards)
+                steps,found,taken_down = strat(plot_boards=plot_boards, plot_interval = plot_interval)
                 self.save_data(i,steps,found,taken_down,filename)
         else:
             for i in range(self.runs):
                 self.set_board()
-                steps,found,taken_down = strat(plot_boards=plot_boards)
+                steps,found,taken_down = strat(plot_boards=plot_boards, plot_interval = plot_interval)
                 self.save_data(i, steps, found, taken_down,filename)
         self.get_stats(tactic)
 
@@ -265,7 +265,7 @@ class Simulation():
 
         return self._run_traversal_loop_swarm(swarm,route,plot_boards,plot_interval,scanner_traversal=True)
 
-    def partitioned_horizontal_scan_traversal(self, plot_boards=True, plot_interval=0.1):
+    def partitioned_horizontal_scan_traversal(self, plot_boards=True, plot_interval=0.2):
         swarm = Swarm(self.board, size=NUMBER_OF_DRONES_IN_SWARM, symbol=DRONE_SYMBOL, init_strat="top-left")
 
         snake_route_start_odd_row = []
