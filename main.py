@@ -34,17 +34,17 @@ Swarm split:
 "phs" - Partitioned Horizontal scan
 """
 
-
 def main():
-    n_runs = 2
-    sim = Simulation(n_runs=n_runs,log=False)
-    sim.start_main_sim_loop_single_tactic_metrics(plot_boards=True,tactic="ttbp")
+    n_runs = 5
+    # sim = Simulation(n_runs=n_runs,log=False)
+    # sim.start_main_sim_loop_single_tactic_metrics(plot_boards=True,tactic="ttbp")
     # sim = Simulation(n_runs=n_runs,log=False)
     # sim.start_main_sim_loop_single_tactic_metrics(plot_boards=True,tactic="hs")
+    # sim = Simulation(n_runs=n_runs,log=False)
+    # sim.start_main_sim_loop_single_tactic_metrics(plot_boards=True,tactic="phs")
     sim = Simulation(n_runs=n_runs,log=False)
-    sim.start_main_sim_loop_single_tactic_metrics(plot_boards=True,tactic="phs")
-    sim = Simulation(n_runs=n_runs,log=False)
-    sim.start_main_sim_loop_single_tactic_metrics(plot_boards=True,tactic="dor")
+
+    sim.start_main_sim_loop_single_tactic_metrics(plot_boards=False,tactic="dor")
     # sim = Simulation(n_runs=5,log=False)
     # sim.start_main_sim_loop_single_tactic_metrics(plot_boards=True,tactic="rndm")
 

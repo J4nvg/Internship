@@ -1,7 +1,7 @@
 from itertools import permutations
 import numpy as np
 from game_config import RISK_CHANCES
-
+from functools import cache
 
 def manhattan_distance(p1, p2):
     x1, y1 = p1
@@ -14,7 +14,6 @@ def total_manhattan_distance_list(list_of_points):
     for i in range(len(list_of_points)-1):
         tot += manhattan_distance(list_of_points[i], list_of_points[i+1])
     return tot
-
 
 def get_optimal_permutation_MD(start_point, target_points):
     shortest_distance = float("inf")

@@ -12,12 +12,13 @@ from tqdm import tqdm
 import time
 import pandas as pd
 from itertools import cycle
+import gc
 
 @cache
 def get_all_paths(width,height):
     board = Board(width=width, height=height, n_hiders=0, n_risks=0, takedown_chance=0)
-    # return dict(nx.all_pairs_shortest_path(board.graph))
-    return 
+    return dict(nx.all_pairs_shortest_path(board.graph))
+    return
 
 class Simulation():
 
@@ -36,7 +37,7 @@ class Simulation():
     def set_board(self):
         self.board = Board(width=WIDTH, height=HEIGHT, n_hiders=NUMBER_OF_HIDERS,n_risks=NUMBER_OF_RISK_LOCATIONS, takedown_chance=RISKY_AREA_P)
         self.board.hide(hider = "#", tactic=HIDING_STRATEGY)
-        if self.runs == -1:
+        if self.runs < 10 :
             self.all_paths = get_all_paths(WIDTH, HEIGHT)
         # self.board.print_board()
 
@@ -84,6 +85,7 @@ class Simulation():
                 self.set_board()
                 steps,found,taken_down = strat(plot_boards=plot_boards, plot_interval = plot_interval)
                 self.save_data(i,steps,found,taken_down,filename)
+                gc.collect()
         else:
             for i in range(self.runs):
                 self.set_board()
@@ -112,12 +114,12 @@ class Simulation():
 
 
 
-        # epsilon = 0.01
-        # numRuns = int(np.ceil((1.96 * np.std(self.find_steps) / epsilon) ** 2))
-        # print("Minimum required simulations for find_steps:", numRuns)
-        #
-        # numRuns = int(np.ceil((1.96 * np.std(self.taken_down) / epsilon) ** 2))
-        # print("Minimum required simulations for find_steps:", numRuns)
+        epsilon = 0.01
+        numRuns = int(np.ceil((1.96 * np.std(self.find_steps) / epsilon) ** 2))
+        print("Minimum required simulations for find_steps:", numRuns)
+
+        numRuns = int(np.ceil((1.96 * np.std(self.taken_down) / epsilon) ** 2))
+        print("Minimum required simulations for find_steps:", numRuns)
 
         return
 

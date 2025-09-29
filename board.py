@@ -1,6 +1,5 @@
 from csv import excel
 import numpy as np
-
 from game_config import RANDOM_RISK_ALLOCATION, FULL_BOARD_HIDING, RISKY_AREA_P, NUMBER_OF_HIDERS, STATIC_RISK
 from helpers import random_risk
 from sampler import Dist
@@ -165,6 +164,7 @@ class Board():
         plt.xlabel("X coordinate")
         plt.ylabel("Y coordinate")
         plt.show()
+        plt.close()
 
     def plot_risk_heatmap(self):
         ps = np.array([[cell.p for cell in row] for row in self.board])
@@ -202,6 +202,7 @@ class Board():
         plt.figure(figsize=(12, 12))
         plt.title("Board as a Graph")
 
+
         nx.draw(self.graph,
                 pos=pos,
                 with_labels=False,
@@ -216,6 +217,7 @@ class Board():
                                 font_color='black')
 
         plt.show()
+        plt.close()
 
     def plot_drone_trajectory_animated(self, swarm,id=1):
         fig, ax = plt.subplots()
@@ -275,4 +277,5 @@ class Board():
         plt.gca().invert_yaxis()
         plt.show()
         ani.save(f"./plots/drone_trajectory_{id}.gif", writer="pillow")
+        plt.close()
 
