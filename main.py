@@ -33,7 +33,7 @@ Swarm split:
 """
 
 def main():
-    n_runs = 10000
+    n_runs = 10_000
     sim = Simulation(n_runs=n_runs,log=False)
     sim.start_main_sim_loop_single_tactic_metrics(plot_boards=False,tactic="ttbp")
     sim = Simulation(n_runs=n_runs,log=False)

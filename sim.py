@@ -12,7 +12,6 @@ from tqdm import tqdm
 import time
 import pandas as pd
 from itertools import cycle
-import gc
 
 @cache
 def get_all_paths(width,height):
@@ -87,7 +86,6 @@ class Simulation():
             self.swarm.reset()
 
             steps, found, taken_down = strat(plot_boards=plot_boards, plot_interval=plot_interval)
-            # print("FOUND",found)
             unique_cells_covered = set({})
             distance_travelled = np.zeros(self.swarm.size)
             for j,drone in enumerate(self.swarm.swarm):
@@ -105,10 +103,6 @@ class Simulation():
 
         print(f"Game stats for: {tactic}, nruns: {self.runs}")
         print(f"grid_w: {WIDTH}, grid_h {HEIGHT}, swarm_size {NUMBER_OF_DRONES_IN_SWARM}")
-        # print("Hider candidate cells: ")
-        # for cell in self.board.risks:
-        #     print(f"{cell.loc}, Risk in cell: {cell.p:.2f}, Hiding chance: {cell.q:.2f} {"< Hidden here" if cell.contains_hider else ""}")
-
 
         metrics_find = get_all_stats(self.find_steps,self.runs)
         metrics_taken_down = get_all_stats(self.taken_down,self.runs)
@@ -416,48 +410,3 @@ class Simulation():
         swarm.remove_swarm()
         return steps,found,len(swarm.takenDown)
 
-
-    # def run_dijkstraBased_strategy(self,plot_boards=True, plot_interval=0.2):
-    #     swarm = self.swarm
-    #     for i in range(self.runs):
-    #         found = False
-    #         r = 0
-    #         while (not found and not len(swarm.takenDown) == swarm.size):
-    #             for i in range(len(swarm.available)):
-    #                 if not swarm.cell_probabilities:
-    #                     break
-    #                 target = swarm.cell_probabilities.popleft()
-    #                 shortest_path = []
-    #                 shortest_path_length = float("inf")
-    #                 going = None
-    #                 for drone in swarm.available:
-    #                     drone_path = drone.get_route_to_goal(target)
-    #                     drone_path_length = len(drone_path)
-    #                     if drone_path_length < shortest_path_length:
-    #                         # print("Enther the loop")
-    #                         shortest_path = drone_path
-    #                         shortest_path_length = drone_path_length
-    #                         going = drone
-    #                         # print(going.number," has shorter path to", target)
-    #
-    #                 print(going.number," Has now set target to: ", target)
-    #                 going.set_route(shortest_path,route_length=shortest_path_length)
-    #                 swarm.to_unavailable(going)
-    #
-    #             for drone in swarm.swarm:
-    #                 if drone.move_next_from_route():
-    #                     found = True
-    #             if plot_boards:
-    #                 sys.stdout.write("\033[H\033[J")
-    #                 self.board.print_board()
-    #                 sys.stdout.flush()
-    #                 time.sleep(plot_interval)
-    #
-    #             if found:
-    #                 break
-    #             r+= 1
-    #
-    #         print(f"Took {r} steps and target was", "found" if found else "not found", f"{len(swarm.takenDown)} drones were taken down.")
-    #     pass
-
-    # def
