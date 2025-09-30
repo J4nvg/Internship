@@ -1,6 +1,6 @@
 from csv import excel
 import numpy as np
-from game_config import RANDOM_RISK_ALLOCATION, FULL_BOARD_HIDING, RISKY_AREA_P, NUMBER_OF_HIDERS, STATIC_RISK
+from game_config import RANDOM_RISK_ALLOCATION, RISKY_AREA_P, NUMBER_OF_HIDERS, STATIC_RISK, HIDING_STRATEGY
 from helpers import random_risk
 from sampler import Dist
 import seaborn as sns
@@ -52,30 +52,50 @@ class Cell():
 class Board():
     def __init__(self,width=10,height=10,n_hiders=3,n_risks = 10,takedown_chance = .5 , dirichlet_alpha=2, id=1):
 
+        self.da = dirichlet_alpha
         self.width = width
         self.height = height
         self.n_hiders = n_hiders
         self.risks = set()
 
-        if FULL_BOARD_HIDING:
-            self.dist = Dist(size=width*height,alpha=dirichlet_alpha)
-        elif n_hiders>0:
+        if n_hiders>0:
             self.dist = Dist(size=n_hiders,alpha=dirichlet_alpha)
-
 
         self.board = self.create_board()
 
         self.hider_candidates = set()
         self.hider = ()
-        if not FULL_BOARD_HIDING and n_hiders >0:
+        if n_hiders >0:
             self.set_hider_candidates(n_hiders)
 
         self.id = id
 
         if RANDOM_RISK_ALLOCATION:
+            self.n_risks = n_risks
+            self.takedown_chance = takedown_chance
             self.set_spread_over_board_risks(n=n_risks,p=takedown_chance)
 
         self.graph = self.to_graph()
+
+    def reset(self):
+        self.risks.clear()
+        self.hider_candidates.clear()
+        self.hider = ()
+
+        for cell in self.board.flat:
+            cell.p = 0
+            cell.contains_hider = False
+            cell.drone_container.clear()
+            cell.q = 0
+
+        if self.n_hiders>0:
+            self.dist = Dist(size=self.n_hiders,alpha=self.da)
+            self.set_hider_candidates(self.n_hiders)
+
+        if RANDOM_RISK_ALLOCATION:
+            self.set_spread_over_board_risks(n=self.n_risks,p=self.takedown_chance)
+
+        self.hide(hider="#", tactic=HIDING_STRATEGY)
 
 
     def create_board(self):
@@ -83,11 +103,8 @@ class Board():
         Generates the grid as a numpy array filled with Cell objects,
         q_i will be sampled from dirichlet distribution
         :return:
-        """
-        if FULL_BOARD_HIDING:
-            board = np.array([[Cell(loc=(x, y), q=self.dist.sample()) for x in range(self.width)] for y in range(self.height)],dtype=object)
-        else:
-            board = np.array([[Cell(loc=(x, y), q=0) for x in range(self.width)] for y in range(self.height)],dtype=object)
+        # """
+        board = np.array([[Cell(loc=(x, y), q=0) for x in range(self.width)] for y in range(self.height)],dtype=object)
         return board
 
     def to_graph(self):

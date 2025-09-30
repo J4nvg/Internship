@@ -6,19 +6,17 @@ Set of Assumptions:
 - Niet diagonaal bewegen
 - Swarm weet hiding chances niet
 - Swarm weet mogelijke hiding spots wel
+- Swarm weeet risicos
 
 #TODO
     - Nieuwe strategieën implementeren
-        - verdeelde Horizontal scan, vertical scan
         - ++Verdeeld naar locaties
+        
     - Plots maken
     - E.v.t. realtime plots
     
     -Stats:
-        - Total area of map covered
         - Total distance covered
-        - Mean distance per drone covered
-        -  
 
 
 valid tactics:
@@ -35,18 +33,19 @@ Swarm split:
 """
 
 def main():
-    n_runs = 5
-    # sim = Simulation(n_runs=n_runs,log=False)
-    # sim.start_main_sim_loop_single_tactic_metrics(plot_boards=True,tactic="ttbp")
-    # sim = Simulation(n_runs=n_runs,log=False)
-    # sim.start_main_sim_loop_single_tactic_metrics(plot_boards=True,tactic="hs")
-    # sim = Simulation(n_runs=n_runs,log=False)
-    # sim.start_main_sim_loop_single_tactic_metrics(plot_boards=True,tactic="phs")
+    n_runs = 10000
     sim = Simulation(n_runs=n_runs,log=False)
-
-    sim.start_main_sim_loop_single_tactic_metrics(plot_boards=False,tactic="dor")
-    # sim = Simulation(n_runs=5,log=False)
-    # sim.start_main_sim_loop_single_tactic_metrics(plot_boards=True,tactic="rndm")
+    sim.start_main_sim_loop_single_tactic_metrics(plot_boards=False,tactic="ttbp")
+    sim = Simulation(n_runs=n_runs,log=False)
+    sim.start_main_sim_loop_single_tactic_metrics(plot_boards=False,tactic="hs")
+    # sim = Simulation(n_runs=n_runs,log=False)
+    # sim.start_main_sim_loop_single_tactic_metrics(plot_boards=False,tactic="phs")
+    # sim = Simulation(n_runs=n_runs,log=False)
+    #
+    # sim = Simulation(n_runs=n_runs,log=False)
+    # sim.start_main_sim_loop_single_tactic_metrics(plot_boards=False,tactic="dor")
+    # sim = Simulation(n_runs=n_runs,log=False)
+    # sim.start_main_sim_loop_single_tactic_metrics(plot_boards=False,tactic="rndm")
 
 
 if __name__ == "__main__":

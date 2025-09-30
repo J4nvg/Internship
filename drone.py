@@ -11,19 +11,20 @@ class Swarm():
         self.size = size
         self.board = board
         self.swarm = []
+
         self.done = set({})
         self.available = []
         self.takenDown = []
         self.temp_unavailable = []
+
         self.symbol = symbol
-        self.cell_probabilities = self.cells_by_probability()
-        self.goal = self.cell_probabilities[0]
+
         self.init_strat = init_strat
         self.init_swarm(strat=init_strat)
         self.same_start = True
 
     def init_swarm(self, strat):
-        self.swarm = [Drone(self.board,goal=self.goal,symbol=self.symbol,parent_swarm=self,num=i) for i in range(self.size)]
+        self.swarm = [Drone(self.board,goal=(),symbol=self.symbol,parent_swarm=self,num=i) for i in range(self.size)]
 
         if strat=="corner":
             corners = [(0,0),(self.board.width-1,0),(self.board.width-1,self.board.height-1),(0,self.board.height-1)]
@@ -46,6 +47,21 @@ class Swarm():
             raise Exception("not implemented yet;")
         self.available = [drone for drone in self.swarm]
         return
+
+    def reset(self):
+        self.done.clear()
+        self.takenDown.clear()
+        self.temp_unavailable.clear()
+
+        for drone in self.swarm:
+
+            if self.board.graph.has_node(drone.current_loc):
+                self.board.graph.nodes[drone.current_loc]['cell'].remove_drone(drone)
+            drone.reset()
+            self.board.add_drone_to_board(drone, drone.start)
+
+        self.available = [drone for drone in self.swarm]
+
 
 
     def to_unavailable(self,drone):
@@ -72,7 +88,7 @@ class Swarm():
         for drone in self.swarm:
             current_node = drone.current_loc
             current_cell = graph.nodes[current_node]['cell']
-            current_cell.remove_drone(self)
+            current_cell.remove_drone(drone)
         # print("All drones were removed.")
 
 
@@ -97,6 +113,13 @@ class Drone():
         self.number = num
 
 
+    def reset(self):
+        self.current_loc = self.start
+        self.route = deque([])
+        self.route_history = []
+        self.alive = True
+        self.route_length = -1
+
 
     def move_next(self,to_x_y):
         if not self.alive:
@@ -116,11 +139,11 @@ class Drone():
 
         current_cell.remove_drone(self)
 
+
         taken_down = np.random.choice([True, False], p=[next_cell.p,1-next_cell.p])
         if taken_down:
             self.alive = False
             self.parent_swarm.drone_takedown(self)
-            self.parent_swarm.cell_probabilities.appendleft(self.goal)
             # print(f"DRONE was taken down while entering {next_node} , on its way to {self.goal}")
             return False
 

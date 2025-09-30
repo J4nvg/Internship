@@ -18,36 +18,37 @@ import gc
 def get_all_paths(width,height):
     board = Board(width=width, height=height, n_hiders=0, n_risks=0, takedown_chance=0)
     return dict(nx.all_pairs_shortest_path(board.graph))
-    return
+
 
 class Simulation():
 
     def __init__(self,n_runs=1,log=False):
         self.runs = n_runs
-        self.set_board()
-        # self.swarm = Swarm(self.board,size=NUMBER_OF_DRONES_IN_SWARM,symbol=DRONE_SYMBOL)
+
+        self.board = Board(width=WIDTH, height=HEIGHT, n_hiders=NUMBER_OF_HIDERS, n_risks=NUMBER_OF_RISK_LOCATIONS, takedown_chance=RISKY_AREA_P)
+        self.swarm = Swarm(self.board, size=NUMBER_OF_DRONES_IN_SWARM, symbol=DRONE_SYMBOL)
+
         self.log = log
         # self.board.plot_q_heatmap()
         self.find_steps = np.zeros(n_runs)
         self.taken_down = np.zeros(n_runs)
         self.found = np.zeros(n_runs)
+        self.frac_area_covered = np.zeros(n_runs)
+        self.mean_distance_travelled = np.zeros(n_runs)
         self.all_paths = None
-
-
-    def set_board(self):
-        self.board = Board(width=WIDTH, height=HEIGHT, n_hiders=NUMBER_OF_HIDERS,n_risks=NUMBER_OF_RISK_LOCATIONS, takedown_chance=RISKY_AREA_P)
-        self.board.hide(hider = "#", tactic=HIDING_STRATEGY)
         if self.runs < 10 :
             self.all_paths = get_all_paths(WIDTH, HEIGHT)
-        # self.board.print_board()
 
-    def save_data(self,i,steps,found,taken_down,filename=''):
+
+    def save_data(self,i,steps,found,taken_down,unique_cells_covered,mean_distance_travelled,filename=''):
         self.find_steps[i] = steps
         self.taken_down[i] = taken_down
         self.found[i] = found
+        self.frac_area_covered[i] = unique_cells_covered / (self.board.width*self.board.height)
+        self.mean_distance_travelled[i] = mean_distance_travelled
         if filename != '':
             with open(filename,"a") as f:
-                f.write(f"{i+1}. Steps: {steps}, Found: {found}, Taken down:{taken_down} \n")
+                f.write(f"{i+1}. Steps: {steps}, Found: {found}, Taken down:{taken_down}, unique_cells_covered: {unique_cells_covered}, mean_distance_travelled: {mean_distance_travelled} \n")
 
 
     def start_main_sim_loop_single_tactic_metrics(self,plot_boards=False, plot_interval = 0.2,tactic="ttbp"):
@@ -80,17 +81,24 @@ class Simulation():
             filename = str(time.time()).replace('.','')
             filename = f"./sim_logs/{tactic}_{filename}.txt"
 
-        if not plot_boards:
-            for i in tqdm(range(self.runs)):
-                self.set_board()
-                steps,found,taken_down = strat(plot_boards=plot_boards, plot_interval = plot_interval)
-                self.save_data(i,steps,found,taken_down,filename)
-                gc.collect()
-        else:
-            for i in range(self.runs):
-                self.set_board()
-                steps,found,taken_down = strat(plot_boards=plot_boards, plot_interval = plot_interval)
-                self.save_data(i, steps, found, taken_down,filename)
+        iterator = tqdm(range(self.runs)) if not plot_boards else range(self.runs)
+        for i in iterator:
+            self.board.reset()
+            self.swarm.reset()
+
+            steps, found, taken_down = strat(plot_boards=plot_boards, plot_interval=plot_interval)
+            # print("FOUND",found)
+            unique_cells_covered = set({})
+            distance_travelled = np.zeros(self.swarm.size)
+            for j,drone in enumerate(self.swarm.swarm):
+                history = drone.route_history
+                distance_travelled[j] = len(history)
+                for cell in history:
+                    unique_cells_covered.add(cell)
+
+
+            self.save_data(i=i, steps=steps, found=found, taken_down=taken_down,unique_cells_covered=len(unique_cells_covered),mean_distance_travelled=np.mean(distance_travelled), filename=filename)
+
         self.get_stats(tactic)
 
     def get_stats(self,tactic):
@@ -104,8 +112,12 @@ class Simulation():
 
         metrics_find = get_all_stats(self.find_steps,self.runs)
         metrics_taken_down = get_all_stats(self.taken_down,self.runs)
-        table = pd.DataFrame([metrics_find,metrics_taken_down], index=["find_steps","taken_down"])
+        metrics_frac_area_covered = get_all_stats(self.frac_area_covered,self.runs)
+        metrics_mean_distance_travelled = get_all_stats(self.mean_distance_travelled,self.runs)
+        table = pd.DataFrame([metrics_find,metrics_taken_down,metrics_frac_area_covered,metrics_mean_distance_travelled],
+                             index=["find_steps","taken_down","area_covered","mean_distance_travelled"])
         print("\n",table)
+
 
 
         print("\n Found percentage")
@@ -119,13 +131,13 @@ class Simulation():
         print("Minimum required simulations for find_steps:", numRuns)
 
         numRuns = int(np.ceil((1.96 * np.std(self.taken_down) / epsilon) ** 2))
-        print("Minimum required simulations for find_steps:", numRuns)
+        print("Minimum required simulations for taken_down:", numRuns)
 
         return
 
 
     def run_random_walk(self, plot_boards=True, plot_interval=0.2):
-        swarm = Swarm(self.board,size=NUMBER_OF_DRONES_IN_SWARM,symbol=DRONE_SYMBOL)
+        swarm = self.swarm
         found = False
         steps = 0
         for drone in swarm.swarm:
@@ -148,7 +160,7 @@ class Simulation():
 
 
     def together_traverse_best_permutation(self,plot_boards=True, plot_interval=0.2):
-        swarm = Swarm(self.board,size=NUMBER_OF_DRONES_IN_SWARM,symbol=DRONE_SYMBOL)
+        swarm = self.swarm
         graph = self.board.graph
         if not swarm.same_start:
             raise Exception(f"together_to_candidates not implemented yet for {swarm.init_strat}")
@@ -176,7 +188,7 @@ class Simulation():
 
 
     def divide_over_risks(self,plot_boards=True, plot_interval=0.2):
-        swarm = Swarm(self.board,size=NUMBER_OF_DRONES_IN_SWARM,symbol=DRONE_SYMBOL)
+        swarm = self.swarm
         graph = self.board.graph
         if not swarm.same_start:
             raise Exception(f"together_to_candidates not implemented yet for {swarm.init_strat}")
@@ -251,7 +263,7 @@ class Simulation():
 
 
     def horizontal_scan_traversal_swarm(self, plot_boards=True, plot_interval=0.2):
-        swarm = Swarm(self.board,size=NUMBER_OF_DRONES_IN_SWARM,symbol=DRONE_SYMBOL)
+        swarm = self.swarm
         if not swarm.same_start:
             raise Exception(f"together_to_candidates not implemented yet for {swarm.init_strat}")
 
@@ -268,7 +280,7 @@ class Simulation():
         return self._run_traversal_loop_swarm(swarm,route,plot_boards,plot_interval,scanner_traversal=True)
 
     def partitioned_horizontal_scan_traversal(self, plot_boards=True, plot_interval=0.2):
-        swarm = Swarm(self.board, size=NUMBER_OF_DRONES_IN_SWARM, symbol=DRONE_SYMBOL, init_strat="top-left")
+        swarm = self.swarm
 
         snake_route_start_odd_row = []
         snake_route_start_even_row = []
@@ -324,17 +336,10 @@ class Simulation():
 
         return self._run_traversal_loop_individual(swarm, plot_boards, plot_interval)
 
-    def partitioned_vertical_scan_traversal(self, plot_boards=True, plot_interval=0.2):
-        swarm = Swarm(self.board,size=NUMBER_OF_DRONES_IN_SWARM,symbol=DRONE_SYMBOL)
-        cols_per_drone, remainder_cols = get_whole_and_remainder(self.board.width,NUMBER_OF_DRONES_IN_SWARM)
-
-
-        pass
-
 
 
     def vertical_scan_traversal_swarm(self,plot_boards=True, plot_interval=0.2):
-        swarm = Swarm(self.board,size=NUMBER_OF_DRONES_IN_SWARM,symbol=DRONE_SYMBOL)
+        swarm = self.swarm
         if not swarm.same_start:
             raise Exception(f"together_to_candidates not implemented yet for {swarm.init_strat}")
 
