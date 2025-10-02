@@ -11,7 +11,9 @@ from helpers import get_optimal_permutation_MD, mean_var, confidence_interval, m
 from tqdm import tqdm
 import time
 import pandas as pd
-from itertools import cycle
+
+
+
 
 @cache
 def get_all_paths(width,height):
@@ -43,11 +45,12 @@ class Simulation():
         self.find_steps[i] = steps
         self.taken_down[i] = taken_down
         self.found[i] = found
-        self.frac_area_covered[i] = unique_cells_covered / (self.board.width*self.board.height)
+        frac_area_covered = unique_cells_covered / (self.board.width*self.board.height)
+        self.frac_area_covered[i] = frac_area_covered
         self.mean_distance_travelled[i] = mean_distance_travelled
         if filename != '':
             with open(filename,"a") as f:
-                f.write(f"{i+1}. Steps: {steps}, Found: {found}, Taken down:{taken_down}, unique_cells_covered: {unique_cells_covered}, mean_distance_travelled: {mean_distance_travelled} \n")
+                f.write(f"{i+1},{steps},{found},{taken_down},{frac_area_covered},{mean_distance_travelled} \n")
 
 
     def start_main_sim_loop_single_tactic_metrics(self,plot_boards=False, plot_interval = 0.2,tactic="ttbp"):
@@ -55,7 +58,7 @@ class Simulation():
         match tactic:
             case "ttbp":
                 strat = self.together_traverse_best_permutation
-                tactic = "Together Traverse Best Permutation"
+                tactic = "together_traverse_best_permutation"
             case "dor":
                 strat = self.divide_over_risks
                 tactic = "divide_over_risks"
@@ -78,7 +81,9 @@ class Simulation():
 
         if self.log:
             filename = str(time.time()).replace('.','')
-            filename = f"./sim_logs/{tactic}_{filename}.txt"
+            filename = f"./sim_logs/{tactic}_{filename}.csv"
+            with open(filename,"a") as f:
+                f.write(f"i,steps,found,taken_down,frac_area_covered,mean_distance_travelled\n")
 
         iterator = tqdm(range(self.runs)) if not plot_boards else range(self.runs)
         for i in iterator:

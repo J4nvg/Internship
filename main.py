@@ -1,12 +1,13 @@
 NX_CUGRAPH_AUTOCONFIG=True
 import timeit
 from sim import Simulation
+
 """
 Set of Assumptions:
 - Niet diagonaal bewegen
 - Swarm weet hiding chances niet
 - Swarm weet mogelijke hiding spots wel
-- Swarm weeet risicos
+- Swarm weet risicos
 
 #TODO
     - Nieuwe strategieën implementeren
@@ -32,16 +33,16 @@ Swarm split:
 "phs" - Partitioned Horizontal scan
 """
 
+
 def main():
-    n_runs = 10_000
-    sim = Simulation(n_runs=n_runs,log=False)
-    sim.start_main_sim_loop_single_tactic_metrics(plot_boards=False,tactic="ttbp")
-    sim = Simulation(n_runs=n_runs,log=False)
-    sim.start_main_sim_loop_single_tactic_metrics(plot_boards=False,tactic="hs")
+    n_runs = 2
+    sim = Simulation(n_runs=n_runs,log=True)
+    sim.start_main_sim_loop_single_tactic_metrics(plot_boards=True, plot_interval=.2,tactic="ttbp")
+    sim = Simulation(n_runs=n_runs,log=True)
+    sim.start_main_sim_loop_single_tactic_metrics(plot_boards=True, plot_interval=.05,tactic="hs")
     # sim = Simulation(n_runs=n_runs,log=False)
     # sim.start_main_sim_loop_single_tactic_metrics(plot_boards=False,tactic="phs")
     # sim = Simulation(n_runs=n_runs,log=False)
-    #
     # sim = Simulation(n_runs=n_runs,log=False)
     # sim.start_main_sim_loop_single_tactic_metrics(plot_boards=False,tactic="dor")
     # sim = Simulation(n_runs=n_runs,log=False)
@@ -49,5 +50,7 @@ def main():
 
 
 if __name__ == "__main__":
-    # timeit.timeit("main()",number=10)
+    start_time = timeit.default_timer()
     main()
+    end_time = timeit.default_timer()
+    print(f"Total execution time: {end_time - start_time:.2f} seconds")
