@@ -139,9 +139,10 @@ class Drone():
 
         current_cell.remove_drone(self)
 
+        rng = self.board.rng
+        # taken_down = rng.choice([True,False],p=[next_cell.p,1-next_cell.p])
 
-        taken_down = np.random.choice([True, False], p=[next_cell.p,1-next_cell.p])
-        if taken_down:
+        if rng.random() < next_cell.p:
             self.alive = False
             self.parent_swarm.drone_takedown(self)
             # print(f"DRONE was taken down while entering {next_node} , on its way to {self.goal}")
@@ -193,12 +194,7 @@ class Drone():
     def set_route(self,path,route_length=-1):
         if route_length == -1:
             route_length = len(path)
-        if(isinstance(path,list)):
-            self.route = deque(path)
-        elif(isinstance(path,deque)):
-            self.route = path
-        else:
-            raise Exception("Path must be either a list or a deque")
+        self.route = deque(path)
         self.route_length = route_length
         return
 

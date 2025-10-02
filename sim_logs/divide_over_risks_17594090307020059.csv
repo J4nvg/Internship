@@ -1,0 +1,3 @@
+i,steps,found,taken_down,frac_area_covered,mean_distance_travelled
+1,45,False,10,0.1225,25.0 
+2,3,True,0,0.0125,3.0 

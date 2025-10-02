@@ -35,18 +35,36 @@ Swarm split:
 
 
 def main():
-    n_runs = 2
-    sim = Simulation(n_runs=n_runs,log=True)
-    sim.start_main_sim_loop_single_tactic_metrics(plot_boards=True, plot_interval=.2,tactic="ttbp")
-    sim = Simulation(n_runs=n_runs,log=True)
-    sim.start_main_sim_loop_single_tactic_metrics(plot_boards=True, plot_interval=.05,tactic="hs")
+
+    #
+    # n_runs = 2
+    # sim = Simulation(n_runs=n_runs,log=True)
+    # sim.start_main_sim_loop_single_tactic_metrics(plot_boards=True, plot_interval=.2,tactic="ttbp")
+    #
+    # sim = Simulation(n_runs=n_runs,log=True)
+    # sim.start_main_sim_loop_single_tactic_metrics(plot_boards=True, plot_interval=.03,tactic="hs")
+    #
+    # sim = Simulation(n_runs=n_runs,log=True)
+    # sim.start_main_sim_loop_single_tactic_metrics(plot_boards=True,tactic="phs")
+    #
+    # sim = Simulation(n_runs=n_runs,log=True)
+    # sim.start_main_sim_loop_single_tactic_metrics(plot_boards=True,tactic="dor")
+    # sim = Simulation(n_runs=n_runs,log=True)
+    # sim.start_main_sim_loop_single_tactic_metrics(plot_boards=True,plot_interval=.05,tactic="rndm")
+
+## Get results
+    n_runs = 100
+    sim = Simulation(n_runs=n_runs,log=False)
+    sim.start_main_sim_loop_single_tactic_metrics(plot_boards=False, plot_interval=.2,tactic="ttbp")
+    sim = Simulation(n_runs=n_runs,log=False)
+    sim.start_main_sim_loop_single_tactic_metrics(plot_boards=False, plot_interval=.05,tactic="hs")
     # sim = Simulation(n_runs=n_runs,log=False)
     # sim.start_main_sim_loop_single_tactic_metrics(plot_boards=False,tactic="phs")
-    # sim = Simulation(n_runs=n_runs,log=False)
+    #
     # sim = Simulation(n_runs=n_runs,log=False)
     # sim.start_main_sim_loop_single_tactic_metrics(plot_boards=False,tactic="dor")
     # sim = Simulation(n_runs=n_runs,log=False)
-    # sim.start_main_sim_loop_single_tactic_metrics(plot_boards=False,tactic="rndm")
+    # sim.start_main_sim_loop_single_tactic_metrics(plot_boards=False,plot_interval=.05,tactic="rndm")
 
 
 if __name__ == "__main__":

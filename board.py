@@ -8,6 +8,8 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import networkx as nx
 
+
+
 class Cell():
     def __init__(self,loc,q):
         self.loc = loc
@@ -51,6 +53,8 @@ class Cell():
 
 class Board():
     def __init__(self,width=10,height=10,n_hiders=3,n_risks = 10,takedown_chance = .5 , dirichlet_alpha=2, id=1):
+
+        self.rng = np.random.default_rng()
 
         self.da = dirichlet_alpha
         self.width = width
@@ -129,6 +133,7 @@ class Board():
             available_cells = [cell for cell in flat_cells if cell not in self.risks]
             if available_cells:
                 cell = np.random.choice(available_cells)
+                #
                 self.risks.add(cell)
                 cell.set_risk(p)
             else:
@@ -141,7 +146,8 @@ class Board():
         for i in range(n):
             available_cells = [cell for cell in flat_cells if cell not in self.hider_candidates]
             if available_cells:
-                cell = np.random.choice(available_cells)
+                # cell = np.random.choice(available_cells)
+                cell = self.rng.choice(available_cells)
                 self.hider_candidates.add(cell)
                 cell.set_hiding_chance(self.dist.sample())
                 if STATIC_RISK:
@@ -164,7 +170,8 @@ class Board():
             chosen_cell.set_hider()
 
         elif tactic == "weighted":
-            chosen_cell = np.random.choice(flat,p=qs)
+            # chosen_cell = np.random.choice(flat,p=qs)
+            chosen_cell = self.rng.choice(flat,p=qs)
             chosen_cell.set_hider()
 
         elif tactic == "debug_corner":
