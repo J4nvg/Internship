@@ -53,7 +53,7 @@ def main():
     # sim.start_main_sim_loop_single_tactic_metrics(plot_boards=True,plot_interval=.05,tactic="rndm")
 
 ## Get results
-    n_runs = 100
+    n_runs = 10
     sim = Simulation(n_runs=n_runs,log=False)
     sim.start_main_sim_loop_single_tactic_metrics(plot_boards=False, plot_interval=.2,tactic="ttbp")
     sim = Simulation(n_runs=n_runs,log=False)

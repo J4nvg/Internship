@@ -50,13 +50,17 @@ class Simulation():
 
     def save_data(self, i, steps, found, taken_down, unique_cells_covered, mean_distance_travelled, total_distance_covered, filename=''):
         self.find_steps[i] = steps
+
         self.taken_down[i] = taken_down
+
         self.found[i] = found
+
         frac_area_covered = unique_cells_covered / (self.board.width * self.board.height)
         self.frac_area_covered[i] = frac_area_covered
 
-        self.total_distance_covered[i] = total_distance_covered
+        self.mean_distance_travelled[i] = mean_distance_travelled
 
+        self.total_distance_covered[i] = total_distance_covered
 
         if filename != '':
             with open(filename, "a") as f:
@@ -64,35 +68,26 @@ class Simulation():
 
     def start_main_sim_loop_single_tactic_metrics(self, plot_boards=False, plot_interval=0.2, tactic="ttbp"):
 
-        match tactic:
-            case "ttbp":
-                strat = self.together_traverse_best_permutation
-                tactic = "together_traverse_best_permutation"
-            case "dor":
-                strat = self.divide_over_risks
-                tactic = "divide_over_risks"
-            case "rndm":
-                strat = self.run_random_walk
-                tactic = "random_walk"
-            case "hs":
-                strat = self.horizontal_scan_traversal_swarm
-                tactic = "horizontal_scan_traversal"
-            case "phs":
-                strat = self.partitioned_horizontal_scan_traversal
-                tactic = "partitioned_horizontal_scan_traversal"
-            case "vs":
-                strat = self.vertical_scan_traversal_swarm
-                tactic = "vertical_scan_traversal"
-            case _:
-                raise ValueError("Invalid tactic")
+        tactic_map = {
+            "ttbp": (self.together_traverse_best_permutation,"together_traverse_best_permutation"),
+            "dor": (self.divide_over_risks,"divide_over_risks"),
+            "rndm": (self.run_random_walk,"random_walk"),
+            "hs": (self.horizontal_scan_traversal_swarm,"horizontal_scan_traversal"),
+            "phs": (self.partitioned_horizontal_scan_traversal,"partitioned_horizontal_scan_traversal"),
+            "vs": (self.vertical_scan_traversal_swarm,"vertical_scan_traversal"),
+        }
+
+        if tactic not in tactic_map:
+            raise ValueError(f"Invalid tactic: {tactic}")
+        strat,tactic = tactic_map[tactic]
+
 
         filename = ''
-
         if self.log:
-            filename = str(time.time()).replace('.', '')
-            filename = f"./sim_logs/{tactic}_{filename}.csv"
+            filename = f"./sim_logs/{tactic}.csv"
             with open(filename, "a") as f:
-                f.write(f"i,steps,found,taken_down,frac_area_covered,mean_distance_travelled\n")
+                f.write(f"{tactic}\n")
+                f.write(f"i,steps,found,taken_down,frac_area_covered,mean_distance_travelled,total_distance_covered\n")
 
         iterator = tqdm(range(self.runs)) if not plot_boards else range(self.runs)
         for i in iterator:
