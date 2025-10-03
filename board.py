@@ -1,6 +1,6 @@
 from csv import excel
 import numpy as np
-from game_config import RANDOM_RISK_ALLOCATION, RISKY_AREA_P, NUMBER_OF_HIDERS, STATIC_RISK, HIDING_STRATEGY
+from game_config import RANDOM_RISK_ALLOCATION, RISKY_AREA_P, NUMBER_OF_HIDER_CANDIDATES, STATIC_RISK, HIDING_STRATEGY
 from helpers import random_risk
 from sampler import Dist
 import seaborn as sns
@@ -52,25 +52,25 @@ class Cell():
             return '.'
 
 class Board():
-    def __init__(self,width=10,height=10,n_hiders=3,n_risks = 10,takedown_chance = .5 , dirichlet_alpha=2, id=1):
+    def __init__(self,width=10,height=10,n_hider_candidates=3,n_risks = 10,takedown_chance = .5 , dirichlet_alpha=2, id=1):
 
         self.rng = np.random.default_rng()
 
         self.da = dirichlet_alpha
         self.width = width
         self.height = height
-        self.n_hiders = n_hiders
+        self.n_hider_candidates = n_hider_candidates
         self.risks = set()
 
-        if n_hiders>0:
-            self.dist = Dist(size=n_hiders,alpha=dirichlet_alpha)
+        if n_hider_candidates>0:
+            self.dist = Dist(size=n_hider_candidates,alpha=dirichlet_alpha)
 
         self.board = self.create_board()
 
         self.hider_candidates = set()
         self.hider = ()
-        if n_hiders >0:
-            self.set_hider_candidates(n_hiders)
+        if n_hider_candidates >0:
+            self.set_hider_candidates(n_hider_candidates)
 
         self.id = id
 
@@ -92,9 +92,9 @@ class Board():
             cell.drone_container.clear()
             cell.q = 0
 
-        if self.n_hiders>0:
-            self.dist = Dist(size=self.n_hiders,alpha=self.da)
-            self.set_hider_candidates(self.n_hiders)
+        if self.n_hider_candidates>0:
+            self.dist = Dist(size=self.n_hider_candidates,alpha=self.da)
+            self.set_hider_candidates(self.n_hider_candidates)
 
         if RANDOM_RISK_ALLOCATION:
             self.set_spread_over_board_risks(n=self.n_risks,p=self.takedown_chance)
@@ -158,7 +158,7 @@ class Board():
         return
 
     def hide(self,hider,tactic="greedy"):
-        if self.n_hiders <=0:
+        if self.n_hider_candidates <=0:
             return
         flat = self.board.flatten()
         qs = np.array([cell.q for cell in flat])
@@ -256,43 +256,32 @@ class Board():
 
         colorList = ['red', 'green', 'blue', 'lime']
 
-        # Create line and marker objects for each drone, initially with no data.
         lines = []
         markers = []
         for i, drone in enumerate(swarm.swarm):
             color = colorList[i % len(colorList)]
-            # The line object will draw the path
             line, = ax.plot([], [], lw=2, color=color, label=f'Drone {i + 1}')
             lines.append(line)
-            # The marker object will be a dot at the drone's current position
             marker, = ax.plot([], [], marker='o', markersize=8, color=color)
             markers.append(marker)
 
         ax.legend()
 
-        # Find the length of the longest route to determine the number of frames.
         max_frames = 0
         if swarm.swarm:
             max_frames = max(len(drone.route_history) for drone in swarm.swarm if drone.route_history)
 
         def update(frame):
-            # For each frame, update the data for each drone's line and marker.
             for i, drone in enumerate(swarm.swarm):
                 if frame < len(drone.route_history):
-                    # Get the path up to the current frame.
                     route_up_to_frame = drone.route_history[:frame + 1]
 
-                    # Unzip coordinates for plotting
                     x_data, y_data = zip(*route_up_to_frame)
 
-                    # Update the line plot data (the path)
                     lines[i].set_data(x_data, y_data)
 
-                    # Update the marker's position (the "head" of the drone)
-                    # We take the last point from the path up to the current frame.
                     markers[i].set_data([x_data[-1]], [y_data[-1]])
 
-            # Return all the artists that were modified
             return lines + markers
 
         # Create the animation.

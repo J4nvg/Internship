@@ -20,7 +20,7 @@ STATIC_RISK = False
 RISKY_AREA_P = .3  # Takedown chance
 
 ### Hider Settings ###
-NUMBER_OF_HIDERS = 5
+NUMBER_OF_HIDER_CANDIDATES = 5
 HIDING_STRATEGY = "weighted" # greedy | weighted | debug_corner
 
 

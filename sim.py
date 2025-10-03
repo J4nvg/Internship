@@ -5,7 +5,7 @@ from drone import Drone, Swarm
 import numpy as np
 import sys, time
 from game_config import HIDING_STRATEGY, WIDTH, HEIGHT, NUMBER_OF_DRONES_IN_SWARM, NUMBER_OF_RISK_LOCATIONS, \
-    RISKY_AREA_P, DRONE_SYMBOL, NUMBER_OF_HIDERS
+    RISKY_AREA_P, DRONE_SYMBOL, NUMBER_OF_HIDER_CANDIDATES
 import networkx as nx
 from helpers import get_optimal_permutation_MD, mean_var, confidence_interval, min_max, get_all_stats, \
     get_whole_and_remainder
@@ -17,7 +17,7 @@ import os
 
 @cache
 def get_all_paths(width, height):
-    board = Board(width=width, height=height, n_hiders=0, n_risks=0, takedown_chance=0)
+    board = Board(width=width, height=height, n_hider_candidates=0, n_risks=0, takedown_chance=0)
     return dict(nx.all_pairs_shortest_path(board.graph))
 
 
@@ -26,7 +26,7 @@ class Simulation():
     def __init__(self, n_runs=1, log=False):
         self.runs = n_runs
 
-        self.board = Board(width=WIDTH, height=HEIGHT, n_hiders=NUMBER_OF_HIDERS, n_risks=NUMBER_OF_RISK_LOCATIONS,
+        self.board = Board(width=WIDTH, height=HEIGHT, n_hider_candidates=NUMBER_OF_HIDER_CANDIDATES, n_risks=NUMBER_OF_RISK_LOCATIONS,
                            takedown_chance=RISKY_AREA_P)
         self.swarm = Swarm(self.board, size=NUMBER_OF_DRONES_IN_SWARM, symbol=DRONE_SYMBOL)
 
