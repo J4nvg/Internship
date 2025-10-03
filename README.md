@@ -11,25 +11,27 @@ The game features a single static hider, which can be placed in one of n hider c
 
 Note that setting more than 10 hider candidates significantly impacts simulation speed for the TTBP tactic, due to an explosion in possible permutations.
 
-At initialization, the candidate cells are randomly selected from the grid and assigned hiding probabilities (q_i). These probabilities are drawn from a Dirichlet distribution, which guarantees that the sum of q = 1.
+At initialization, the candidate cells are randomly selected from the grid and assigned hiding probabilities (q<sub>i</sub>). These probabilities are drawn from a Dirichlet distribution, which guarantees: $\sum^{hidercandidates}_{i=1}q_i=1$.
 
 The current implementation provides two hiding strategies:
+Greedy
+: The hider always selects the cell with the highest (q<sub>i</sub>).
 
-* **Greedy**: The hider always selects the cell with the highest (q_i).
-* **Weighted**: The hider selects a cell probabilistically, according to the distribution of (q_i).
+Weighted
+: The hider selects a cell probabilistically, according to the distribution of (q<sub>i</sub>).
 
 ###### About the dirichlet distribution alpha value:
 In the implementation the definition of the dirichlet distribution alpha is slightly adjusted. 
 The main code shows alpha as a scalar to control spread, in the 'Dist' class alpha is adjusted to be a 1-dimensional array filled with the scalar value. 
 By default, the alpha scalar is set to 2. 
-Meaning that with two hider candidates the resulting hiding probabilities, q_1 and q_2, will be approximately 0.5 each. 
+Meaning that with two hider candidates the resulting hiding probabilities, q<sub>1</sub> and q<sub>2</sub>, will be approximately 0.5 each. 
 If one want to preserve an even distribution as the number of hider candidates increases, alpha should scale with it. 
 If alpha is kept fixed instead the resulting distribution becomes more spread out.
 
 
 ### Risks
-Each hider cell has some associated risk with it, **p_i**.</br>
-p_i is the probability that an individual drone will be taken down upon entering the cell, the p_i thus does not necessarily directly affect the swarm.
+Each hider cell has some associated risk with it, **p<sub>i</sub>**.</br>
+p<sub>i</sub> is the probability that an individual drone will be taken down upon entering the cell, the p<sub>i</sub> thus does not necessarily directly affect the swarm.
 This means that if the drone enters the cell, and is taken down, it will not be able to find the hider even if the hider is located in the cell that the drone just entered.
 
 The risk probabilities or risk chances are set in the `game_config` file:
@@ -37,7 +39,7 @@ The risk probabilities or risk chances are set in the `game_config` file:
 ```python
 RISK_CHANCES = [1/10,1/9,1/8,1/7,1/6,1/5,1/4,1/3]
 ```
-For each hider candidate a random sample is *drawn with replacement* from this Risk_chances list.
+For each hider candidate a random sample is *drawn with replacement* from this `risk_chances` list.
 
 
 ### Swarm & Drones
@@ -46,8 +48,8 @@ The first game-step or simulation step is the swarm entering the grid on positio
 </br> The swarm operates under the following restrictions and assumptions:
 - Drones in a swarm **cannot move diagonally**;
 - Drones in a swarm **know possible hiding 'candidates'** (cells where the hider might be hidden);
-- Drones in a swarm **are aware of the risks** the hiding candidates have (**p_i**).
-- Drones in a swarm **are not aware of the hiding chances** the hiding candidates have (**q_i**);
+- Drones in a swarm **are aware of the risks** the hiding candidates have (**p<sub>i</sub>**).
+- Drones in a swarm **are not aware of the hiding chances** the hiding candidates have (**q<sub>i</sub>**);
 
 
 
