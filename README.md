@@ -7,7 +7,7 @@ ___
 ## Game info
 
 ### Hider
-The game features a single static hider, which can be placed in one of n hider candidate locations. The number of hiding candidates is configurable in the `game_config` file.
+The game features a single static hider, which can be placed in one of n<sub>hider_candidates</sub> locations. The number of hiding candidates is configurable in the `game_config` file.
 
 Note that setting more than 10 hider candidates significantly impacts simulation speed for the TTBP tactic, due to an explosion in possible permutations.
 
