@@ -5,6 +5,8 @@ from matplotlib.animation import FuncAnimation
 import matplotlib
 import argparse
 
+
+
 parser = argparse.ArgumentParser(description="Specify Simulation Tactic")
 
 parser.add_argument("--tactic", required=True, type=str, choices=["ttbp", "rndm", "hs", "vs", "dor", "phs"],
@@ -32,9 +34,9 @@ metrics_to_plot = [
 ]
 
 
-fig, axes = plt.subplots(3, 2, figsize=(15, 10), sharex=True)
+# fig, axes = plt.subplots(3, 2, figsize=(15, 10), sharex=True)
 
-axes = axes.flatten()
+# axes = axes.flatten()
 
 def animate(i):
     data = pd.read_csv(path, header=1)
