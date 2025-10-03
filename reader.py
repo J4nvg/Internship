@@ -3,9 +3,24 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 import matplotlib
+import argparse
 
+parser = argparse.ArgumentParser(description="Specify Simulation Tactic")
 
-path = Path.cwd() / "sim_logs" / "together_traverse_best_permutation.csv"
+parser.add_argument("--tactic", required=True, type=str, choices=["ttbp", "rndm", "hs", "vs", "dor", "phs"],
+                    help="Tactic to use")
+args = parser.parse_args()
+
+tactic_map = {
+    "ttbp":"together_traverse_best_permutation",
+    "dor":"divide_over_risks",
+    "rndm":"random_walk",
+    "hs":"horizontal_scan_traversal",
+    "phs":"partitioned_horizontal_scan_traversal",
+    "vs":"vertical_scan_traversal",
+}
+
+path = Path.cwd() / "sim_logs" / tactic_map[args.tactic]
 
 metrics_to_plot = [
     'steps',
