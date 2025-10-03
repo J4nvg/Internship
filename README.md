@@ -1,5 +1,5 @@
 # Simple drone swarm simulator in adversarial hide & seek environment
-<img src="img/runs.gif">
+<img src="img/PHS.png" href="">
 
 ___
 ## Set of assumptions:
