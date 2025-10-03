@@ -2,6 +2,7 @@
 <p align="center">
 <img src="img/PHS.png" width="400" >
 </p>
+
 ___
 ## Game info
 
