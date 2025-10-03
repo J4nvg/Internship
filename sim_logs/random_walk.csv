@@ -1,0 +1,12 @@
+random_walk
+i,steps,found,taken_down,frac_area_covered,mean_distance_travelled,total_distance_covered
+1,154,True,0,0.5125,154.8 
+2,1581,False,10,0.985,777.2 
+3,125,True,1,0.4425,119.6 
+4,189,True,4,0.4525,148.9 
+5,245,True,2,0.7725,231.4 
+6,731,True,5,0.835,571.6 
+7,87,True,2,0.3175,84.9 
+8,1398,False,10,0.935,581.5 
+9,193,True,4,0.6775,138.3 
+10,307,True,2,0.645,287.0 

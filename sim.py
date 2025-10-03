@@ -12,6 +12,7 @@ from helpers import get_optimal_permutation_MD, mean_var, confidence_interval, m
 from tqdm import tqdm
 import time
 import pandas as pd
+import os
 
 
 @cache
@@ -64,7 +65,7 @@ class Simulation():
 
         if filename != '':
             with open(filename, "a") as f:
-                f.write(f"{i + 1},{steps},{found},{taken_down},{frac_area_covered},{mean_distance_travelled} \n")
+                f.write(f"{i + 1},{steps},{found},{taken_down},{frac_area_covered},{mean_distance_travelled},{total_distance_covered} \n")
 
     def start_main_sim_loop_single_tactic_metrics(self, plot_boards=False, plot_interval=0.2, tactic="ttbp"):
 
@@ -84,6 +85,8 @@ class Simulation():
 
         filename = ''
         if self.log:
+            if os.path.exists(f"./sim_logs/{tactic}.csv"):
+                    os.remove(f"./sim_logs/{tactic}.csv")
             filename = f"./sim_logs/{tactic}.csv"
             with open(filename, "a") as f:
                 f.write(f"{tactic}\n")

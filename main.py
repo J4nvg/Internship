@@ -1,6 +1,8 @@
 NX_CUGRAPH_AUTOCONFIG=True
 import timeit
 from sim import Simulation
+import argparse
+
 
 """
 Set of Assumptions:
@@ -15,13 +17,11 @@ Set of Assumptions:
         
     - Plots maken
     - E.v.t. realtime plots
-    
-    -Stats:
-        - Total distance covered
 
 
 valid tactics:
 
+["ttbp","rndm","hs","vs,"dor","phs"]
 Swarm together:
 "ttbp" - Together Traverse Best Permutation
 "rndm" - Random walk
@@ -35,6 +35,20 @@ Swarm split:
 
 
 def main():
+    parser = argparse.ArgumentParser(description="Specify Simulation Tactic")
+
+    parser.add_argument("--plot", action='store_true', help="plots boards to visualise the simulation run")
+    parser.add_argument("--tactic",required=True,type=str,choices=["ttbp","rndm","hs","vs","dor","phs"], help="Tactic to use")
+    parser.add_argument('--runs',type=int,default=1,help='Number of simulation runs.')
+    parser.add_argument( '--log', action='store_true',help='Enable logging to CSV.')
+    parser.add_argument( '--plotspeed',default=.2, type=float,help='increase or decrease plotting speed, 0 < speed < 1')
+    args = parser.parse_args()
+
+
+    print(f"Starting simulation for tactic: {args.tactic} with {args.runs} runs...")
+    sim = Simulation(n_runs=args.runs, log=args.log)
+    sim.start_main_sim_loop_single_tactic_metrics(plot_boards=args.plot,plot_interval=args.plotspeed, tactic=args.tactic)
+
 
     #
     # n_runs = 2
@@ -53,11 +67,11 @@ def main():
     # sim.start_main_sim_loop_single_tactic_metrics(plot_boards=True,plot_interval=.05,tactic="rndm")
 
 ## Get results
-    n_runs = 10
-    sim = Simulation(n_runs=n_runs,log=False)
-    sim.start_main_sim_loop_single_tactic_metrics(plot_boards=False, plot_interval=.2,tactic="ttbp")
-    sim = Simulation(n_runs=n_runs,log=False)
-    sim.start_main_sim_loop_single_tactic_metrics(plot_boards=False, plot_interval=.05,tactic="hs")
+    # n_runs = 10
+    # sim = Simulation(n_runs=n_runs,log=True)
+    # sim.start_main_sim_loop_single_tactic_metrics(plot_boards=False, plot_interval=.2,tactic="ttbp")
+    # sim = Simulation(n_runs=n_runs,log=True)
+    # sim.start_main_sim_loop_single_tactic_metrics(plot_boards=False, plot_interval=.05,tactic="hs")
     # sim = Simulation(n_runs=n_runs,log=False)
     # sim.start_main_sim_loop_single_tactic_metrics(plot_boards=False,tactic="phs")
     #
