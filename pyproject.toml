@@ -1,7 +1,7 @@
 [project]
-name = "internship"
+name = "Simple drone swarm simulator in adversarial hide & seek environment"
 version = "0.1.0"
-description = "Add your description here"
+description = "Simple drone swarm simulator in adversarial hide & seek environment"
 requires-python = ">=3.12"
 dependencies = [
     "matplotlib>=3.10.6",
