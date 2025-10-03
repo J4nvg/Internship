@@ -1,8 +1,9 @@
 # Simple drone swarm simulator in adversarial hide & seek environment
+<p align="center">
 <img src="img/PHS.png" width="400" >
-
+</p>
 ___
-## Set of assumptions:
+## Game info
 
 ### Hider
 The game features a single static hider, which can be placed in one of n hider candidate locations. The number of hiding candidates is configurable in the `game_config` file.
