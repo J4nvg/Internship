@@ -137,7 +137,7 @@ class Simulation():
         print(f"{found_percentage:.2%}")
         table.to_csv(f"sim_results/{tactic}.csv", sep='\t', encoding='utf-8', header=True)
         with open(f"sim_results/{tactic}.csv", "a") as f:
-            f.write(f"Found\t{found_percentage:.2%}")
+            f.write(f"Found\t{found_percentage:.2%}\n")
 
 
         self.all_metrics = (table,found_percentage)
