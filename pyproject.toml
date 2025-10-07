@@ -1,7 +1,7 @@
 [project]
-name = "Simple drone swarm simulator in adversarial hide & seek environment"
+name = "SDSS"
 version = "0.1.0"
-description = "Simple drone swarm simulator in adversarial hide & seek environment"
+description = "Simple drone swarm simulator in adversarial hide and seek environment"
 requires-python = ">=3.12"
 dependencies = [
     "matplotlib>=3.10.6",

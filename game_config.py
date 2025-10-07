@@ -21,7 +21,7 @@ RISKY_AREA_P = .3  # Takedown chance
 
 ### Hider Settings ###
 NUMBER_OF_HIDER_CANDIDATES = 5
-HIDING_STRATEGY = "weighted" # greedy | weighted | debug_corner
+HIDING_STRATEGY = 'greedy'  # greedy | weighted
 
 
 #full board risk apart from hiding

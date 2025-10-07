@@ -34,6 +34,7 @@ Each hider cell has some associated risk with it, **p<sub>i</sub>**.</br>
 p<sub>i</sub> is the probability that an individual drone will be taken down upon entering the cell, the p<sub>i</sub> thus does not necessarily directly affect the swarm.
 This means that if the drone enters the cell, and is taken down, it will not be able to find the hider even if the hider is located in the cell that the drone just entered.
 
+
 The risk probabilities or risk chances are set in the `game_config` file:
 
 ```python
@@ -50,7 +51,7 @@ The first game-step or simulation step is the swarm entering the grid on positio
 - Drones in a swarm **know possible hiding 'candidates'** (cells where the hider might be hidden);
 - Drones in a swarm **are aware of the risks** the hiding candidates have (**p<sub>i</sub>**).
 - Drones in a swarm **are not aware of the hiding chances** the hiding candidates have (**q<sub>i</sub>**);
-
+- If a drone enters / expands a hider candidate cell that contains the hider _and_ the drone does not get taken down, then it has certainly found the hider. i.e. $P( \text{Found_Hider} |  \text{Hider_in_cell} \land \text{not_taken_down}) = 1$  
 
 
 ___ 

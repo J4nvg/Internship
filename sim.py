@@ -67,7 +67,7 @@ class Simulation():
             with open(filename, "a") as f:
                 f.write(f"{i + 1},{steps},{found},{taken_down},{frac_area_covered},{mean_distance_travelled},{total_distance_covered} \n")
 
-    def start_main_sim_loop_single_tactic_metrics(self, plot_boards=False, plot_interval=0.2, tactic="ttbp"):
+    def start_main_sim_loop_single_tactic_metrics(self, plot_boards=False, plot_interval=0.2, tactic="ttbp", hiding_strat = HIDING_STRATEGY):
 
         tactic_map = {
             "ttbp": (self.together_traverse_best_permutation,"together_traverse_best_permutation"),
@@ -94,7 +94,7 @@ class Simulation():
 
         iterator = tqdm(range(self.runs)) if not plot_boards else range(self.runs)
         for i in iterator:
-            self.board.reset()
+            self.board.reset(hiding_strat=hiding_strat)
             self.swarm.reset()
 
             steps, found, taken_down = strat(plot_boards=plot_boards, plot_interval=plot_interval)
@@ -151,7 +151,7 @@ class Simulation():
     def run_random_walk(self, plot_boards=True, plot_interval=0.2):
         swarm = self.swarm
         found = False
-        steps = 0
+        steps = 1
         for drone in swarm.swarm:
             if drone.move_next(swarm.swarm[0].start):
                 found = True

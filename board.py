@@ -81,7 +81,7 @@ class Board():
 
         self.graph = self.to_graph()
 
-    def reset(self):
+    def reset(self, hiding_strat = HIDING_STRATEGY):
         self.risks.clear()
         self.hider_candidates.clear()
         self.hider = ()
@@ -99,7 +99,7 @@ class Board():
         if RANDOM_RISK_ALLOCATION:
             self.set_spread_over_board_risks(n=self.n_risks,p=self.takedown_chance)
 
-        self.hide(hider="#", tactic=HIDING_STRATEGY)
+        self.hide(hider="#", tactic=hiding_strat)
 
 
     def create_board(self):
@@ -146,7 +146,11 @@ class Board():
         for i in range(n):
             available_cells = [cell for cell in flat_cells if cell not in self.hider_candidates]
             if available_cells:
-                # cell = np.random.choice(available_cells)
+                # if isinstance(HIDING_STRATEGY, int):
+                #     cell = flat_cells[HIDING_STRATEGY]
+                # # cell = np.random.choice(available_cells)
+                # else:
+                #     cell = self.rng.choice(available_cells)
                 cell = self.rng.choice(available_cells)
                 self.hider_candidates.add(cell)
                 cell.set_hiding_chance(self.dist.sample())
@@ -176,6 +180,10 @@ class Board():
 
         elif tactic == "debug_corner":
             chosen_cell = flat[0]
+            chosen_cell.set_hider()
+
+        elif isinstance(tactic,int):
+            chosen_cell = flat[tactic]
             chosen_cell.set_hider()
 
         self.hider = chosen_cell.loc

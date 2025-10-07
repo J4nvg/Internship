@@ -1,3 +1,5 @@
+from game_config import HIDING_STRATEGY
+
 NX_CUGRAPH_AUTOCONFIG=True
 import timeit
 from sim import Simulation
@@ -9,18 +11,20 @@ import argparse
 
 #TODO
     - Nieuwe strategieën implementeren
-        - ++Verdeeld naar locaties
+        - Drone laat 'trail' achter in visited cells 
+        - Probability updating ?
+        - 
         
     - Plots maken
-    - E.v.t. realtime plots
 
 
 valid tactics:
 
 ["ttbp","rndm","hs","vs,"dor","phs"]
+
 Swarm together:
 "ttbp" - Together Traverse Best Permutation
-"rndm" - Random walk
+"rndm" - Random walk [fix 1st]
 "hs" - Horizontal scan
 "vs" - Vertical scan
 
@@ -43,17 +47,7 @@ def main():
 
     print(f"Starting simulation for tactic: {args.tactic} with {args.runs} runs...")
     sim = Simulation(n_runs=args.runs, log=args.log)
-    sim.start_main_sim_loop_single_tactic_metrics(plot_boards=args.plot,plot_interval=args.plotspeed, tactic="phs")
-    sim = Simulation(n_runs=args.runs, log=args.log)
-    sim.start_main_sim_loop_single_tactic_metrics(plot_boards=args.plot,plot_interval=args.plotspeed, tactic="dor")
-    sim = Simulation(n_runs=args.runs, log=args.log)
-    sim.start_main_sim_loop_single_tactic_metrics(plot_boards=args.plot,plot_interval=args.plotspeed, tactic="ttbp")
-    sim = Simulation(n_runs=args.runs, log=args.log)
-    sim.start_main_sim_loop_single_tactic_metrics(plot_boards=args.plot,plot_interval=.05, tactic="hs")
-    sim = Simulation(n_runs=args.runs, log=args.log)
-    sim.start_main_sim_loop_single_tactic_metrics(plot_boards=args.plot,plot_interval=args.plotspeed, tactic="ttbp")
-    sim = Simulation(n_runs=args.runs, log=args.log)
-    sim.start_main_sim_loop_single_tactic_metrics(plot_boards=args.plot,plot_interval=.05, tactic="rndm")
+    sim.start_main_sim_loop_single_tactic_metrics(plot_boards=args.plot,plot_interval=args.plotspeed, tactic=args.tactic)
 
 
 
