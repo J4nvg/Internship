@@ -131,13 +131,17 @@ class Simulation():
         pd.set_option('display.max_rows', len(table))
         print("\n", table)
         pd.reset_option('display.max_rows')
-
         print("\n Found percentage")
         found = self.found
-        found_percentage = np.sum(found) / len(found) * 100
-        print(found_percentage,"%")
+        found_percentage = np.sum(found) / len(found)
+        print(f"{found_percentage:.2%}")
+        table.to_csv(f"sim_results/{tactic}.csv", sep='\t', encoding='utf-8', header=True)
+        with open(f"sim_results/{tactic}.csv", "a") as f:
+            f.write(f"Found\t{found_percentage:.2%}")
+
 
         self.all_metrics = (table,found_percentage)
+
 
         epsilon = 0.01
         numRuns = int(np.ceil((1.96 * np.std(self.find_steps) / epsilon) ** 2))
