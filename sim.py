@@ -55,7 +55,7 @@ class Simulation():
         self.taken_down[i] = taken_down
 
         self.found[i] = found
-
+        self.file_name = ''
         frac_area_covered = unique_cells_covered / (self.board.width * self.board.height)
         self.frac_area_covered[i] = frac_area_covered
 
@@ -83,11 +83,11 @@ class Simulation():
         strat,tactic = tactic_map[tactic]
 
 
-        filename = ''
+        filename = f"./sim_logs/{tactic}_{WIDTH}_{NUMBER_OF_DRONES_IN_SWARM}_{NUMBER_OF_HIDER_CANDIDATES}.csv"
+        self.file_name = filename
         if self.log:
-            if os.path.exists(f"./sim_logs/{tactic}.csv"):
-                    os.remove(f"./sim_logs/{tactic}.csv")
-            filename = f"./sim_logs/{tactic}.csv"
+            if os.path.exists(filename):
+                    os.remove(filename)
             with open(filename, "a") as f:
                 f.write(f"{tactic}\n")
                 f.write(f"i,steps,found,taken_down,frac_area_covered,mean_distance_travelled,total_distance_covered\n")
@@ -135,8 +135,8 @@ class Simulation():
         found = self.found
         found_percentage = np.sum(found) / len(found)
         print(f"{found_percentage:.2%}")
-        table.to_csv(f"sim_results/{tactic}.csv", sep='\t', encoding='utf-8', header=True)
-        with open(f"sim_results/{tactic}.csv", "a") as f:
+        table.to_csv(self.file_name, sep='\t', encoding='utf-8', header=True)
+        with open(self.file_name, "a") as f:
             f.write(f"Found\t{found_percentage:.2%}\n")
 
 

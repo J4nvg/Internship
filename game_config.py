@@ -7,7 +7,7 @@ WIDTH, HEIGHT = square_size,square_size  # Let's keep it square
 
 
 ### Drone settings ###
-NUMBER_OF_DRONES_IN_SWARM = 10
+NUMBER_OF_DRONES_IN_SWARM = 5
 
 DRONE_SYMBOL = 'X'
 
