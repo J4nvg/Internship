@@ -1,7 +1,7 @@
 from itertools import permutations,combinations
 import numpy as np
 from game_config import SUCCES_PROBABILITIES
-from functools import cache
+
 
 def manhattan_distance(p1, p2):
     x1, y1 = p1
@@ -82,7 +82,10 @@ def get_q_A(possible_hiding_spots,k):
         final_q_a[subset] = lambda_k * prod
 
     return final_q_a
-#
+
+
+
+#Testing code
 # class P_item():
 #     def __init__(self,p,name):
 #         self.p = p

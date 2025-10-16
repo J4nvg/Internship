@@ -32,26 +32,26 @@ class Simulation():
 
         self.taken_down = np.zeros(n_runs)
 
-        self.found = np.zeros(n_runs)
+        self.all_found = np.zeros(n_runs)
 
         self.frac_area_covered = np.zeros(n_runs)
+        self.hider_frac_found = np.zeros(n_runs)
 
         self.mean_distance_travelled = np.zeros(n_runs)
 
         self.total_distance_covered = np.zeros(n_runs)
 
-        self.hider_frac_found = np.zeros(n_runs)
 
         self.all_paths = None
         if self.runs > 10:
             self.all_paths = get_all_paths(WIDTH, HEIGHT)
 
-    def save_data(self, i, steps, found, taken_down, unique_cells_covered, mean_distance_travelled, total_distance_covered,hider_frac_found, filename=''):
+    def save_data(self, i, steps, all_found, taken_down, unique_cells_covered, mean_distance_travelled, total_distance_covered,hider_frac_found, filename=''):
         self.find_steps[i] = steps
 
         self.taken_down[i] = taken_down
 
-        self.found[i] = found
+        self.all_found[i] = all_found
         self.file_name = ''
         frac_area_covered = unique_cells_covered / (self.board.width * self.board.height)
         self.frac_area_covered[i] = frac_area_covered
@@ -65,7 +65,7 @@ class Simulation():
 
         if filename != '':
             with open(filename, "a") as f:
-                f.write(f"{i + 1},{steps},{found},{taken_down},{frac_area_covered},{mean_distance_travelled},{total_distance_covered},{hider_frac_found}\n")
+                f.write(f"{i + 1},{steps},{all_found},{taken_down},{frac_area_covered},{mean_distance_travelled},{total_distance_covered},{hider_frac_found}\n")
 
     def start_main_sim_loop_single_tactic_metrics(self, plot_boards=False, plot_interval=0.2, tactic="ttbp", hiding_strat = HIDING_STRATEGY):
         tactic_map = {
@@ -75,6 +75,7 @@ class Simulation():
             "hs": (self.horizontal_scan_traversal_swarm,"horizontal_scan_traversal"),
             "phs": (self.partitioned_horizontal_scan_traversal,"partitioned_horizontal_scan_traversal"),
             "vs": (self.vertical_scan_traversal_swarm,"vertical_scan_traversal"),
+            "sp": (self.spiral_traversal_swarm,"spiral_traversal_swarm"),
         }
 
         if tactic not in tactic_map:
@@ -89,14 +90,14 @@ class Simulation():
                     os.remove(filename)
             with open(filename, "a") as f:
                 f.write(f"{tactic}\n")
-                f.write(f"i,steps,found,taken_down,frac_area_covered,mean_distance_travelled,total_distance_covered,hider_frac_found\n")
+                f.write(f"i,steps,all_found,taken_down,frac_area_covered,mean_distance_travelled,total_distance_covered,hider_frac_found\n")
 
         iterator = tqdm(range(self.runs)) if not plot_boards else range(self.runs)
         for i in iterator:
             self.board.reset(hiding_strat=hiding_strat)
             self.swarm.reset()
 
-            steps, found, taken_down,frac_found = strat(plot_boards=plot_boards, plot_interval=plot_interval)
+            steps, all_found, taken_down,frac_found = strat(plot_boards=plot_boards, plot_interval=plot_interval)
 
             unique_cells_covered = set({})
             distance_travelled = np.zeros(self.swarm.size)
@@ -106,7 +107,7 @@ class Simulation():
                 for cell in history:
                     unique_cells_covered.add(cell)
 
-            self.save_data(i=i, steps=steps, found=found, taken_down=taken_down,
+            self.save_data(i=i, steps=steps, all_found=all_found, taken_down=taken_down,
                            unique_cells_covered=len(unique_cells_covered),
                            mean_distance_travelled=np.mean(distance_travelled), total_distance_covered=np.sum(distance_travelled),hider_frac_found=frac_found,filename=filename)
 
@@ -133,16 +134,16 @@ class Simulation():
         print("\n", table)
         pd.reset_option('display.max_rows')
         print("\n All_found percentage")
-        found = self.found
-        found_percentage = np.sum(found) / len(found)
-        print(f"{found_percentage:.2%}")
+        all_found = self.all_found
+        all_found_percentage = np.sum(all_found) / len(all_found)
+        print(f"{all_found_percentage:.2%}")
         if self.log:
             table.to_csv(self.file_name, sep='\t', encoding='utf-8', header=True)
             with open(self.file_name, "a") as f:
-                f.write(f"Found\t{found_percentage:.2%}\n")
+                f.write(f"Found\t{all_found_percentage:.2%}\n")
 
 
-        self.all_metrics = (table,found_percentage)
+        self.all_metrics = (table,all_found_percentage)
 
 
         epsilon = 0.01
@@ -370,6 +371,48 @@ class Simulation():
                     route.append((y, x))
 
         return self._run_traversal_loop_swarm(swarm, route, plot_boards, plot_interval, scanner_traversal=True)
+
+    def spiral_traversal_swarm(self, plot_boards=True, plot_interval=0.2):
+        swarm = self.swarm
+        if not swarm.same_start:
+            raise Exception(f"together_to_candidates not implemented yet for {swarm.init_strat}")
+
+        route = [swarm.swarm[0].start]
+
+        h = self.board.height
+        w = self.board.width
+
+        top, bottom = 0, h - 1
+        left, right = 0, w - 1
+
+        # Clockwise spiral from (0, 0) inward
+        while left <= right and top <= bottom:
+            # left -> right along the current top row
+            for x in range(left, right + 1):
+                route.append((top, x))
+            top += 1
+
+            # top -> bottom along the current right column
+            for y in range(top, bottom + 1):
+                route.append((y, right))
+            right -= 1
+
+            # right -> left along the current bottom row (if remaining)
+            if top <= bottom:
+                for x in range(right, left - 1, -1):
+                    route.append((bottom, x))
+                bottom -= 1
+
+            # bottom -> top along the current left column (if remaining)
+            if left <= right:
+                for y in range(bottom, top - 1, -1):
+                    route.append((y, left))
+                left += 1
+
+        return self._run_traversal_loop_swarm(
+            swarm, route, plot_boards, plot_interval, scanner_traversal=True
+        )
+
 
     def _run_traversal_loop_swarm(self, swarm, route, plot_boards=False, plot_interval=0.2, scanner_traversal=False):
         n_found = 0

@@ -11,8 +11,6 @@ import argparse
 
 #TODO
     - Nieuwe strategieën implementeren
-        - Met de klok-mee naar binnen
-        - tegen de klok in naar binnen
         
     - Plots maken
 
@@ -37,7 +35,7 @@ def main():
     parser = argparse.ArgumentParser(description="Specify Simulation Tactic")
 
     parser.add_argument("--plot", action='store_true', help="plots boards to visualise the simulation run")
-    parser.add_argument("--tactic",required=False,type=str,choices=["ttbp","rndm","hs","vs","dor","phs"], help="Tactic to use")
+    parser.add_argument("--tactic",required=False,type=str,choices=["ttbp","rndm","hs","vs","dor","phs","sp"], help="Tactic to use")
     parser.add_argument('--runs',type=int,default=1,help='Number of simulation runs.')
     parser.add_argument( '--log', action='store_true',help='Enable logging to CSV.')
     parser.add_argument( '--plotspeed',default=.2, type=float,help='increase or decrease plotting speed, 0 < speed < 1')

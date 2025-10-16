@@ -6,6 +6,7 @@
 
 ---
 # Todo
+
 -[ ] Find_steps == Time, change names
 -[ ] more Plots
 -[ ] Nieuwe strategieën
@@ -38,6 +39,7 @@ As in the Greedy strategy, **q<sub>i</sub>** is based on Lidbetter (2020) [^1].
 
 **Random**
 : The hider(s) select one or more candidate cells **i ∈ S**, where probabilities **q<sub>i</sub>** are drawn from a Dirichlet distribution, ensuring
+
 $$
 \sum_{i=1}^{m_{\text{hider_candidate}}} q_i = 1.
 $$
@@ -75,7 +77,7 @@ This means that if the drone enters the cell, and is taken down or captured, it 
 The success probabilities `game_config` file:
 
 ```python
-SUCCES_PROBABILITIES = [1/10,1/9,1/8,1/7,1/6,1/5,1/4,1/3]
+SUCCES_PROBABILITIES = [1/3,2/3,3/4,4/5,9/10,95/100]
 ```
 For each hider candidate a random sample is *drawn with replacement* from this `SUCCES_PROBABILITIES` list.
 

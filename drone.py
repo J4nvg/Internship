@@ -140,7 +140,7 @@ class Drone():
         if taken_down:
             self.alive = False
             self.parent_swarm.drone_takedown(self)
-            print(f"{self} was taken down when going to {to_x_y}")
+            # print(f"{self} was taken down when going to {to_x_y}")
             return False
 
 

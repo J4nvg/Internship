@@ -1,13 +1,13 @@
 ##############################################
 # Square board:
-square_size = 5
+square_size = 20
 
 
 WIDTH, HEIGHT = square_size,square_size  # Let's keep it square
 
 
 ### Drone settings ###
-NUMBER_OF_DRONES_IN_SWARM = 2
+NUMBER_OF_DRONES_IN_SWARM = 10
 
 DRONE_SYMBOL = 'X'
 

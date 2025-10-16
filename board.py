@@ -96,8 +96,6 @@ class Cell():
         else:
             return '.'
 
-
-
 class Board():
     def __init__(self,width=10,n_hider_candidates=3, dirichlet_alpha=2, idd=1):
         """
@@ -110,7 +108,6 @@ class Board():
 
         self.width = width
         self.height = width
-
 
         self.n_hider_candidates = n_hider_candidates
         self.n_hiders = N_HIDERS
@@ -135,8 +132,8 @@ class Board():
         :param STRING hiding_strat: strategy that hider uses to hide
         :return: none
         """
-        self.plot_p_heatmap()
-        self.plot_q_heatmap()
+        # self.plot_p_heatmap()
+        # self.plot_q_heatmap()
 
         self.hider_candidates.clear()
         self.hiders.clear()
