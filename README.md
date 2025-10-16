@@ -153,3 +153,4 @@ If alpha is kept fixed instead the resulting distribution becomes more spread ou
 
 ---
 [^1]: Lidbetter T (2020) Search and rescue in the face of uncertain threats, European Journal of Operational Research 285(3):1153–1160.
+https://doi.org/10.1016/j.ejor.2020.02.029
