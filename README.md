@@ -41,7 +41,7 @@ As in the Greedy strategy, **q<sub>i</sub>** is based on Lidbetter (2020) [^1].
 : The hider(s) select one or more candidate cells **i ∈ S**, where probabilities **q<sub>i</sub>** are drawn from a Dirichlet distribution, ensuring
 
 $$
-\sum_{i=1}^{m_{\text{hider_candidate}}} q_i = 1.
+\sum_{i=1}^{m_{\text{hider candidate}}} q_i = 1.
 $$
 
 **Integer or List of Integers**
