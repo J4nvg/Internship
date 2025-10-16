@@ -41,9 +41,9 @@ As in the Greedy strategy, **q<sub>i</sub>** is based on Lidbetter (2020) [^1].
 
 **Random**
 : The hider(s) select one or more candidate cells **i ∈ S**, where probabilities **q<sub>i</sub>** are drawn from a Dirichlet distribution, ensuring
-```math
+$$
 \sum_{i=1}^{m_{\text{hider_candidate}}} q_i = 1.
-```
+$$
 
 **Integer or List of Integers**
 : The hider(s) select one or more integer indices of the flattened board array directly.
@@ -56,15 +56,15 @@ This option is primarily intended for debugging purposes.
 In the Search and Rescue game, it is optimal for the Hider to choose each subset
 ( A \in S^{(k)} ) with probability
 
-```math
+$$
 q_A = \lambda_k \prod_{i \in A} \frac{1 - p_i}{p_i},
-```
+$$
 
 where
 
-```math
+$$
 \lambda_k = \left( \sum_{B \in S^{(k)}} \prod_{i \in B} \frac{1 - p_i}{p_i} \right)^{-1}.
-```
+$$
 
 ---
 
