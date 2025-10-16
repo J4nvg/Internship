@@ -41,9 +41,9 @@ As in the Greedy strategy, **q<sub>i</sub>** is based on Lidbetter (2020) [^1].
 
 **Random**
 : The hider(s) select one or more candidate cells **i ∈ S**, where probabilities **q<sub>i</sub>** are drawn from a Dirichlet distribution, ensuring
-[
+```math
 \sum_{i=1}^{m_{\text{hider_candidate}}} q_i = 1.
-]
+```
 
 **Integer or List of Integers**
 : The hider(s) select one or more integer indices of the flattened board array directly.
@@ -56,15 +56,15 @@ This option is primarily intended for debugging purposes.
 In the Search and Rescue game, it is optimal for the Hider to choose each subset
 ( A \in S^{(k)} ) with probability
 
-[
+```math
 q_A = \lambda_k \prod_{i \in A} \frac{1 - p_i}{p_i},
-]
+```
 
 where
 
-[
+```math
 \lambda_k = \left( \sum_{B \in S^{(k)}} \prod_{i \in B} \frac{1 - p_i}{p_i} \right)^{-1}.
-]
+```
 
 ---
 
@@ -91,7 +91,8 @@ The first game-step or simulation step is the swarm entering the grid on positio
 - Drones in a swarm **know possible hiding 'candidates'** (cells where the hider might be hidden);
 - Drones in a swarm **are aware of the success probabilities** the hiding candidates have ($p_i$).
 - Drones in a swarm **are not aware of the hiding chances** the hiding candidates have (**q<sub>i</sub>**);
-- If a drone enters / expands a hider candidate cell that contains the hider _and_ the drone does not get taken down, then it has certainly found the hider. i.e. $P( \text{Found_Hider} |  \text{Hider_in_cell} \land \text{not_taken_down}) = 1$  
+- If a drone enters / expands a hider candidate cell that contains the hider _and_ the drone does not get taken down, then it has certainly found the hider. i.e. 
+$P( \text{Found Hider} |  \text{Hider in cell} \land \text{not taken down}) = 1$  
 - If a drone enters / expands a hider candidate cell that contains the hider _and_ the drone *does* get taken down, then it has not found the hider. 
 
 
