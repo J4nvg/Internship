@@ -6,9 +6,6 @@
 
 ---
 # Todo
--[X] P<sub>i</sub> = Succes probability instead of risk probability
--[X] Implement optimal hiding strategy (Lidbetter)
--[X] Multiple hiders
 -[ ] Find_steps == Time, change names
 -[ ] more Plots
 -[ ] Nieuwe strategieën
@@ -68,7 +65,7 @@ $$
 
 ---
 
-[^1]: Lidbetter, T. (2020). *Search and Rescue Games*. **Operations Research**, 68(1), 203–214.
+
 
 ### Risks
 
@@ -152,5 +149,6 @@ If alpha is kept fixed instead the resulting distribution becomes more spread ou
 
 
 ---
+
 [^1]: Lidbetter T (2020) Search and rescue in the face of uncertain threats, European Journal of Operational Research 285(3):1153–1160.
 https://doi.org/10.1016/j.ejor.2020.02.029
