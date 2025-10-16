@@ -1,7 +1,8 @@
+import time
 from csv import excel
 import numpy as np
-from game_config import RANDOM_RISK_ALLOCATION, RISKY_AREA_P, NUMBER_OF_HIDER_CANDIDATES, STATIC_RISK, HIDING_STRATEGY
-from helpers import random_risk
+from game_config import STATIC_P_p, NUMBER_OF_HIDER_CANDIDATES, N_HIDERS, STATIC_P, HIDING_STRATEGY
+from helpers import random_succes_p, get_q_A
 from sampler import Dist
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -11,108 +12,159 @@ import networkx as nx
 
 
 class Cell():
-    def __init__(self,loc,q):
+    def __init__(self,loc,q=0):
+        """
+        :param TUPLE loc: Initial (x,y) location of the cell
+        :param FLOAT q: Initial hiding chance q of the cell, 0 by default
+        """
         self.loc = loc
-        self.p = 0 # Take down chance
+        self.p = 0 # success probability
         self.q = q # Hiding chance
         self.contains_hider = False
+        self.found = False
         self.drone_container = set()
+        self.is_hider_candidate = False
 
     def add_drone(self, drone):
+        """
+        Adds drone object to the set drone_containers
+        :param drone:Drone object
+        :return: None
+        """
         self.drone_container.add(drone)
         return
 
+    def after_cell_found(self):
+        self.contains_hider = False
+        self.found = True
+        return
+
     def remove_drone(self,drone):
+        """
+        Removes drone object from the set drone_containers.
+        :param drone: Drone object
+        :return: None
+        """
         self.drone_container.discard(drone)
         return
 
     def set_hider(self):
+        """
+        Puts contains_hider to true
+        :return: None
+        """
         self.contains_hider = True
         return
 
-    def set_hiding_chance(self,q):
-        self.q = q
-        return
-
-
-    def set_risk(self,p_i):
+    def set_succes_p(self,p_i):
+        """
+        Sets the success probability of this cell
+        :param FLOAT p_i: success probability
+        :return: None
+        """
         self.p = p_i
+
+    def reset(self):
+        """
+        Resets all cells parameters to initial values
+        :return: None
+        """
+        self.p = 1
+        self.q = 0
+        self.found = False
+        self.is_hider_candidate = False
+        self.contains_hider = False
+        self.drone_container.clear()
         return
 
     def __str__(self):
-        if len(self.drone_container)>0 and self.contains_hider:
+        """
+        Decides how to represent the cell on the printed representation of the board
+        :return: Colored ■ for hider found, int amount of drones for length of the drone container, colored # if the cell contains a hider, colored C if cell is a hider candidate, . otherwise
+        in that hierarchy
+        """
+        if self.found:
+            return f"\x1b[3;33;43m□\x1b[0m"
+        elif len(self.drone_container)>0 and self.contains_hider:
             return f"\x1b[3;33;43m■\x1b[0m"
         elif len(self.drone_container)>0:
             return f"{len(self.drone_container)}"
         elif self.contains_hider:
             return f"\x1b[6;30;42m#\x1b[0m"
-        elif self.p >0 :
-            return f"\x1b[6;30;42mR\x1b[0m"
+        elif self.is_hider_candidate :
+            return f"\x1b[6;30;42mC\x1b[0m"
         else:
             return '.'
 
-class Board():
-    def __init__(self,width=10,height=10,n_hider_candidates=3,n_risks = 10,takedown_chance = .5 , dirichlet_alpha=2, id=1):
 
+
+class Board():
+    def __init__(self,width=10,n_hider_candidates=3, dirichlet_alpha=2, idd=1):
+        """
+        :param INT width: size of the SQUARE board
+        :param INT n_hider_candidates: Amount of possible hiding spots
+        """
         self.rng = np.random.default_rng()
 
         self.da = dirichlet_alpha
+
         self.width = width
-        self.height = height
+        self.height = width
+
+
         self.n_hider_candidates = n_hider_candidates
-        self.risks = set()
+        self.n_hiders = N_HIDERS
+        self.hider_candidates = set({})
+        self.hiders = set({})
 
         if n_hider_candidates>0:
             self.dist = Dist(size=n_hider_candidates,alpha=dirichlet_alpha)
 
         self.board = self.create_board()
 
-        self.hider_candidates = set()
-        self.hider = ()
         if n_hider_candidates >0:
             self.set_hider_candidates(n_hider_candidates)
 
-        self.id = id
-
-        if RANDOM_RISK_ALLOCATION:
-            self.n_risks = n_risks
-            self.takedown_chance = takedown_chance
-            self.set_spread_over_board_risks(n=n_risks,p=takedown_chance)
+        self.id = idd
 
         self.graph = self.to_graph()
 
     def reset(self, hiding_strat = HIDING_STRATEGY):
-        self.risks.clear()
+        """
+        Clears the board, makes sure board is ready for reinitialization
+        :param STRING hiding_strat: strategy that hider uses to hide
+        :return: none
+        """
+        self.plot_p_heatmap()
+        self.plot_q_heatmap()
+
         self.hider_candidates.clear()
-        self.hider = ()
+        self.hiders.clear()
 
         for cell in self.board.flat:
-            cell.p = 0
-            cell.contains_hider = False
-            cell.drone_container.clear()
-            cell.q = 0
+            cell.reset()
 
         if self.n_hider_candidates>0:
             self.dist = Dist(size=self.n_hider_candidates,alpha=self.da)
             self.set_hider_candidates(self.n_hider_candidates)
 
-        if RANDOM_RISK_ALLOCATION:
-            self.set_spread_over_board_risks(n=self.n_risks,p=self.takedown_chance)
 
-        self.hide(hider="#", tactic=hiding_strat)
+        self.hide(tactic=hiding_strat)
 
 
     def create_board(self):
         """
-        Generates the grid as a numpy array filled with Cell objects,
-        q_i will be sampled from dirichlet distribution
-        :return:
+        Generates the grid as a numpy array filled with Cell objects
+        :return: Board as 2d numpy array with cell objects
         # """
         board = np.array([[Cell(loc=(x, y), q=0) for x in range(self.width)] for y in range(self.height)],dtype=object)
         return board
 
     def to_graph(self):
-
+        """
+        Turns board into NetworkX graph
+        :return: NetworkX graph conversion of the board
+        """
         G = nx.grid_2d_graph(self.height, self.width)
         for y in range(self.height):
             for x in range(self.width):
@@ -121,73 +173,116 @@ class Board():
         return G
 
     def add_drone_to_board(self,drone,s):
+        """
+        Adds the drone object to location s on the board
+        :param drone: Drone object
+        :param s: Location of the drone object
+        :return: None
+        """
         x,y = s
         # print(f"Placing drone on (x:{x},y:{y})")
         target_cell =  self.board[y,x]
         target_cell.add_drone(drone)
         return
 
-    def set_spread_over_board_risks(self,n,p):
-        flat_cells = self.board.flatten()
-        for i in range(n):
-            available_cells = [cell for cell in flat_cells if cell not in self.risks]
-            if available_cells:
-                cell = np.random.choice(available_cells)
-                #
-                self.risks.add(cell)
-                cell.set_risk(p)
-            else:
-                print("No more available locations to add a risk.")
-                return False
-        return
-
     def set_hider_candidates(self,n):
+        """
+        Opens n locations as possible hiding locations
+        :param n: the amount of hiding locations
+        :return: none
+        """
         flat_cells = self.board.flatten()
         for i in range(n):
             available_cells = [cell for cell in flat_cells if cell not in self.hider_candidates]
             if available_cells:
-                # if isinstance(HIDING_STRATEGY, int):
-                #     cell = flat_cells[HIDING_STRATEGY]
-                # # cell = np.random.choice(available_cells)
-                # else:
-                #     cell = self.rng.choice(available_cells)
                 cell = self.rng.choice(available_cells)
                 self.hider_candidates.add(cell)
-                cell.set_hiding_chance(self.dist.sample())
-                if STATIC_RISK:
-                    cell.set_risk(RISKY_AREA_P)
+                cell.is_hider_candidate = True
+
+                if HIDING_STRATEGY == "random":
+                    cell.q = self.dist.sample()
+
+                if STATIC_P:
+                    cell.set_succes_p(STATIC_P_p)
                 else:
-                    cell.set_risk(random_risk())
-                self.risks.add(cell)
+                    cell.set_succes_p(random_succes_p())
         return
 
-    def hide(self,hider,tactic="greedy"):
+    def hide(self,tactic="random"):
+        """
+        Puts n hiders in opened hiding locations / hider candidates
+        :param tactic: Tactic that hider follows when placing hiders in candidate hider cells
+        :return: Returns none
+        """
+
         if self.n_hider_candidates <=0:
             return
-        flat = self.board.flatten()
-        qs = np.array([cell.q for cell in flat])
         chosen_cell = None
 
-        if tactic == "greedy":
-            index = np.argmax(qs)
-            chosen_cell = flat[index]
-            chosen_cell.set_hider()
+        if tactic == "weighted" or tactic == 'greedy':
+            q_a = get_q_A(self.hider_candidates,self.n_hiders)
 
-        elif tactic == "weighted":
-            # chosen_cell = np.random.choice(flat,p=qs)
-            chosen_cell = self.rng.choice(flat,p=qs)
-            chosen_cell.set_hider()
+            q_list = [val for key, val in q_a.items()]
+            subset_list = [key for key in q_a]
 
-        elif tactic == "debug_corner":
-            chosen_cell = flat[0]
-            chosen_cell.set_hider()
+            if tactic == 'weighted':
+                chosen_subset = self.rng.choice(subset_list, p=q_list)
 
-        elif isinstance(tactic,int):
-            chosen_cell = flat[tactic]
-            chosen_cell.set_hider()
+            elif tactic == 'greedy':
+                chosen_subset = subset_list[np.argmax(q_list)]
 
-        self.hider = chosen_cell.loc
+            for subset in subset_list:
+                for cell in subset:
+                    cell.q = q_a[subset]
 
+            for cell in chosen_subset:
+                cell.set_hider()
+                self.hider = cell.loc
+                self.hiders.add(cell.loc)
+
+
+            #     print("\n","printing the chosen cell")
+            #     print(cell.loc, cell.p, cell.q,"\n")
+
+
+            # print("cell p and cell q for cell in all subsets: \n")
+            # for subset in subset_list:
+            #     for cell in subset:
+            #         print("loc",cell.loc)
+            #         print("p",cell.p)
+            #         print("q",cell.q,'\n')
+            # time.sleep(10)
+
+        else:
+            flat = self.board.flatten()
+            if tactic == "random":
+                qs = np.array([cell.q for cell in flat])
+                # chosen_cell = np.random.choice(flat,p=qs)
+                n = 0
+                while(n < self.n_hiders):
+                    cell = self.rng.choice(flat,p=qs)
+                    if cell.loc in self.hiders:
+                        continue
+                    else:
+                        cell.set_hider()
+                        self.hider = cell.loc
+                        self.hiders.add(cell.loc)
+                        n+=1
+
+            elif isinstance(tactic,list):
+                for i in tactic:
+                    chosen_cell = flat[i]
+                    cell = chosen_cell
+                    cell.set_hider()
+                    self.hiders.add(chosen_cell)
+
+
+            elif isinstance(tactic,int):
+                chosen_cell = flat[tactic]
+                chosen_cell.set_hider()
+                self.hiders.add(chosen_cell)
+
+        return
 
     def plot_q_heatmap(self):
         qs = np.array([[cell.q for cell in row] for row in self.board])
@@ -198,10 +293,10 @@ class Board():
         plt.show()
         plt.close()
 
-    def plot_risk_heatmap(self):
+    def plot_p_heatmap(self):
         ps = np.array([[cell.p for cell in row] for row in self.board])
         sns.heatmap(ps, annot=True, cmap="crest", fmt=".2f", cbar=True)
-        plt.title("Visualising high risk area")
+        plt.title("Visualising high p area")
         plt.xlabel("X coordinate")
         plt.ylabel("Y coordinate")
         plt.show()

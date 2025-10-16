@@ -3,44 +3,84 @@
 <img src="img/PHS.png" width="400" >
 </p>
 
+
+---
+# Todo
+-[X] P<sub>i</sub> = Succes probability instead of risk probability
+-[X] Implement optimal hiding strategy (Lidbetter)
+-[X] Multiple hiders
+-[ ] Find_steps == Time, change names
+-[ ] more Plots
+-[ ] Nieuwe strategieën
+-[ ] Update readme.
 ___
 ## Game info
 
+
 ### Hider
-The game features a single static hider, which can be placed in one of n<sub>hider_candidates</sub> locations. The number of hiding candidates is configurable in the `game_config` file.
 
-Note that setting more than 10 hider candidates significantly impacts simulation speed for the TTBP tactic, due to an explosion in possible permutations.
+The game features **n** static hiders, which can be placed in one of
+**m<sub>hider_candidate</sub>** locations, denoted as the set **S**.
+Both the number of hiders and the number of candidate locations are configurable in the `game_config` file.
 
-At initialization, the candidate cells are randomly selected from the grid and assigned hiding probabilities (q<sub>i</sub>). These probabilities are drawn from a Dirichlet distribution, which guarantees: $\sum^{hidercandidates}_{i=1}q_i=1$.
+> **Note:** Setting more than 10 hider candidates significantly impacts simulation speed for the **TTBP** tactic, due to the combinatorial explosion in possible hiding permutations.
 
-The current implementation provides two hiding strategies:
-Greedy
-: The hider always selects the cell with the highest (q<sub>i</sub>).
+At initialization, candidate cells are randomly selected from the grid and assigned hiding probabilities **q<sub>i</sub>**, based on the chosen hiding strategy.
 
-Weighted
-: The hider selects a cell probabilistically, according to the distribution of (q<sub>i</sub>).
+---
 
-###### About the dirichlet distribution alpha value:
-In the implementation the definition of the dirichlet distribution alpha is slightly adjusted. 
-The main code shows alpha as a scalar to control spread, in the 'Dist' class alpha is adjusted to be a 1-dimensional array filled with the scalar value. 
-By default, the alpha scalar is set to 2. 
-Meaning that with two hider candidates the resulting hiding probabilities, q<sub>1</sub> and q<sub>2</sub>, will be approximately 0.5 each. 
-If one want to preserve an even distribution as the number of hider candidates increases, alpha should scale with it. 
-If alpha is kept fixed instead the resulting distribution becomes more spread out.
+#### Hiding Strategies
 
+**Greedy**
+: The hider(s) select the subset of candidate cells with the highest **q<sub>A</sub>** values.
+The probabilities **q<sub>A</sub>** are derived following Lidbetter (2020) [^1], which provides the optimal hiding strategy for this class of Search and Rescue games.
+
+**Weighted**
+: The hider(s) select a subset of candidate cells according to the probability distribution over **S**, defined by **q<sub>i</sub>**.
+As in the Greedy strategy, **q<sub>i</sub>** is based on Lidbetter (2020) [^1].
+
+**Random**
+: The hider(s) select one or more candidate cells **i ∈ S**, where probabilities **q<sub>i</sub>** are drawn from a Dirichlet distribution, ensuring
+[
+\sum_{i=1}^{m_{\text{hider_candidate}}} q_i = 1.
+]
+
+**Integer or List of Integers**
+: The hider(s) select one or more integer indices of the flattened board array directly.
+This option is primarily intended for debugging purposes.
+
+---
+
+#### Theorem 3 of Lidbetter (2020)
+
+In the Search and Rescue game, it is optimal for the Hider to choose each subset
+( A \in S^{(k)} ) with probability
+
+[
+q_A = \lambda_k \prod_{i \in A} \frac{1 - p_i}{p_i},
+]
+
+where
+
+[
+\lambda_k = \left( \sum_{B \in S^{(k)}} \prod_{i \in B} \frac{1 - p_i}{p_i} \right)^{-1}.
+]
+
+---
+
+[^1]: Lidbetter, T. (2020). *Search and Rescue Games*. **Operations Research**, 68(1), 203–214.
 
 ### Risks
-Each hider cell has some associated risk with it, **p<sub>i</sub>**.</br>
-p<sub>i</sub> is the probability that an individual drone will be taken down upon entering the cell, the p<sub>i</sub> thus does not necessarily directly affect the swarm.
-This means that if the drone enters the cell, and is taken down, it will not be able to find the hider even if the hider is located in the cell that the drone just entered.
 
+Each hider_candidate cell $i, i \in S$, has a probability $p_i$., which is the probability that the Searcher is not taken down / captured when searching location $i$, we refer to this as the _success probability_ of location $i$</br>
+This means that if the drone enters the cell, and is taken down or captured, it will not be able to find the hider even if the hider is located in the cell that the drone just entered.
 
-The risk probabilities or risk chances are set in the `game_config` file:
+The success probabilities `game_config` file:
 
 ```python
-RISK_CHANCES = [1/10,1/9,1/8,1/7,1/6,1/5,1/4,1/3]
+SUCCES_PROBABILITIES = [1/10,1/9,1/8,1/7,1/6,1/5,1/4,1/3]
 ```
-For each hider candidate a random sample is *drawn with replacement* from this `risk_chances` list.
+For each hider candidate a random sample is *drawn with replacement* from this `SUCCES_PROBABILITIES` list.
 
 
 ### Swarm & Drones
@@ -49,9 +89,10 @@ The first game-step or simulation step is the swarm entering the grid on positio
 </br> The swarm operates under the following restrictions and assumptions:
 - Drones in a swarm **cannot move diagonally**;
 - Drones in a swarm **know possible hiding 'candidates'** (cells where the hider might be hidden);
-- Drones in a swarm **are aware of the risks** the hiding candidates have (**p<sub>i</sub>**).
+- Drones in a swarm **are aware of the success probabilities** the hiding candidates have ($p_i$).
 - Drones in a swarm **are not aware of the hiding chances** the hiding candidates have (**q<sub>i</sub>**);
 - If a drone enters / expands a hider candidate cell that contains the hider _and_ the drone does not get taken down, then it has certainly found the hider. i.e. $P( \text{Found_Hider} |  \text{Hider_in_cell} \land \text{not_taken_down}) = 1$  
+- If a drone enters / expands a hider candidate cell that contains the hider _and_ the drone *does* get taken down, then it has not found the hider. 
 
 
 ___ 
@@ -96,3 +137,18 @@ NX_CUGRAPH_AUTOCONFIG=True
 In terms of efficiency it does not make a big difference anyway, as with the current implementation the complete set of all shortest routes is only calculated once and then cached. Thus theoretically the main optimization that can be done here is with the initialization of the simulation.  
 More about NX_CUGRAPH:
 https://rapids.ai/nx-cugraph/
+
+
+
+
+###### About the dirichlet distribution alpha value:
+In the implementation the definition of the dirichlet distribution alpha is slightly adjusted. 
+The main code shows alpha as a scalar to control spread, in the 'Dist' class alpha is adjusted to be a 1-dimensional array filled with the scalar value. 
+By default, the alpha scalar is set to 2. 
+Meaning that with two hider candidates the resulting hiding probabilities, q<sub>1</sub> and q<sub>2</sub>, will be approximately 0.5 each. 
+If one want to preserve an even distribution as the number of hider candidates increases, alpha should scale with it. 
+If alpha is kept fixed instead the resulting distribution becomes more spread out.
+
+
+---
+[^1]: Lidbetter T (2020) Search and rescue in the face of uncertain threats, European Journal of Operational Research 285(3):1153–1160.

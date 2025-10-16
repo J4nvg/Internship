@@ -54,7 +54,6 @@ class Swarm():
         self.temp_unavailable.clear()
 
         for drone in self.swarm:
-
             if self.board.graph.has_node(drone.current_loc):
                 self.board.graph.nodes[drone.current_loc]['cell'].remove_drone(drone)
             drone.reset()
@@ -73,11 +72,6 @@ class Swarm():
         self.temp_unavailable.remove(drone)
         self.available.append(drone)
         return
-
-    def cells_by_probability(self):
-        graph = self.board.graph
-        sort = sorted(graph.nodes, key = lambda node: graph.nodes[node]['cell'].q, reverse=True)
-        return deque(sort)
 
     def drone_takedown(self,drone):
         self.takenDown.append(drone)
@@ -116,6 +110,7 @@ class Drone():
     def reset(self):
         self.current_loc = self.start
         self.route = deque([])
+
         self.route_history = []
         self.alive = True
         self.route_length = -1
@@ -126,6 +121,7 @@ class Drone():
             return False
 
         graph = self.board.graph
+
         next_node = to_x_y
         next_cell = graph.nodes[next_node]['cell']
         target_found = next_cell.contains_hider
@@ -139,19 +135,21 @@ class Drone():
 
         current_cell.remove_drone(self)
 
-        rng = self.board.rng
-        # taken_down = rng.choice([True,False],p=[next_cell.p,1-next_cell.p])
+        taken_down = np.random.choice([True, False], p=[1 - next_cell.p, next_cell.p])
 
-        if rng.random() < next_cell.p:
+        if taken_down:
             self.alive = False
             self.parent_swarm.drone_takedown(self)
-            # print(f"DRONE was taken down while entering {next_node} , on its way to {self.goal}")
+            print(f"{self} was taken down when going to {to_x_y}")
             return False
 
 
         next_cell.add_drone(self)
         self.current_loc = next_node
         self.route_history.append(next_node)
+
+        if target_found:
+            next_cell.after_cell_found()
 
         return target_found
 

@@ -4,8 +4,7 @@ from board import Board
 from drone import Drone, Swarm
 import numpy as np
 import sys, time
-from game_config import HIDING_STRATEGY, WIDTH, HEIGHT, NUMBER_OF_DRONES_IN_SWARM, NUMBER_OF_RISK_LOCATIONS, \
-    RISKY_AREA_P, DRONE_SYMBOL, NUMBER_OF_HIDER_CANDIDATES
+from game_config import HIDING_STRATEGY, WIDTH, HEIGHT, NUMBER_OF_DRONES_IN_SWARM, DRONE_SYMBOL, NUMBER_OF_HIDER_CANDIDATES,N_HIDERS
 import networkx as nx
 from helpers import get_optimal_permutation_MD, mean_var, confidence_interval, min_max, get_all_stats, \
     get_whole_and_remainder
@@ -17,17 +16,14 @@ import os
 
 @cache
 def get_all_paths(width, height):
-    board = Board(width=width, height=height, n_hider_candidates=0, n_risks=0, takedown_chance=0)
+    board = Board(width=width, n_hider_candidates=0)
     return dict(nx.all_pairs_shortest_path(board.graph))
 
-
 class Simulation():
-
     def __init__(self, n_runs=1, log=False):
         self.runs = n_runs
 
-        self.board = Board(width=WIDTH, height=HEIGHT, n_hider_candidates=NUMBER_OF_HIDER_CANDIDATES, n_risks=NUMBER_OF_RISK_LOCATIONS,
-                           takedown_chance=RISKY_AREA_P)
+        self.board = Board(width=WIDTH, n_hider_candidates=NUMBER_OF_HIDER_CANDIDATES)
         self.swarm = Swarm(self.board, size=NUMBER_OF_DRONES_IN_SWARM, symbol=DRONE_SYMBOL)
 
         self.log = log
@@ -44,12 +40,13 @@ class Simulation():
 
         self.total_distance_covered = np.zeros(n_runs)
 
+        self.hider_frac_found = np.zeros(n_runs)
 
         self.all_paths = None
         if self.runs > 10:
             self.all_paths = get_all_paths(WIDTH, HEIGHT)
 
-    def save_data(self, i, steps, found, taken_down, unique_cells_covered, mean_distance_travelled, total_distance_covered, filename=''):
+    def save_data(self, i, steps, found, taken_down, unique_cells_covered, mean_distance_travelled, total_distance_covered,hider_frac_found, filename=''):
         self.find_steps[i] = steps
 
         self.taken_down[i] = taken_down
@@ -63,12 +60,14 @@ class Simulation():
 
         self.total_distance_covered[i] = total_distance_covered
 
+        self.hider_frac_found[i] = hider_frac_found
+
+
         if filename != '':
             with open(filename, "a") as f:
-                f.write(f"{i + 1},{steps},{found},{taken_down},{frac_area_covered},{mean_distance_travelled},{total_distance_covered} \n")
+                f.write(f"{i + 1},{steps},{found},{taken_down},{frac_area_covered},{mean_distance_travelled},{total_distance_covered},{hider_frac_found}\n")
 
     def start_main_sim_loop_single_tactic_metrics(self, plot_boards=False, plot_interval=0.2, tactic="ttbp", hiding_strat = HIDING_STRATEGY):
-
         tactic_map = {
             "ttbp": (self.together_traverse_best_permutation,"together_traverse_best_permutation"),
             "dor": (self.divide_over_risks,"divide_over_risks"),
@@ -83,21 +82,21 @@ class Simulation():
         strat,tactic = tactic_map[tactic]
 
 
-        filename = f"./sim_logs/{tactic}_{WIDTH}_{NUMBER_OF_DRONES_IN_SWARM}_{NUMBER_OF_HIDER_CANDIDATES}.csv"
+        filename = f"./sim_logs/T{tactic}_W{WIDTH}_D{NUMBER_OF_DRONES_IN_SWARM}_C{NUMBER_OF_HIDER_CANDIDATES}_H{N_HIDERS}_RUNS{self.runs}.csv"
         self.file_name = filename
         if self.log:
             if os.path.exists(filename):
                     os.remove(filename)
             with open(filename, "a") as f:
                 f.write(f"{tactic}\n")
-                f.write(f"i,steps,found,taken_down,frac_area_covered,mean_distance_travelled,total_distance_covered\n")
+                f.write(f"i,steps,found,taken_down,frac_area_covered,mean_distance_travelled,total_distance_covered,hider_frac_found\n")
 
         iterator = tqdm(range(self.runs)) if not plot_boards else range(self.runs)
         for i in iterator:
             self.board.reset(hiding_strat=hiding_strat)
             self.swarm.reset()
 
-            steps, found, taken_down = strat(plot_boards=plot_boards, plot_interval=plot_interval)
+            steps, found, taken_down,frac_found = strat(plot_boards=plot_boards, plot_interval=plot_interval)
 
             unique_cells_covered = set({})
             distance_travelled = np.zeros(self.swarm.size)
@@ -109,7 +108,7 @@ class Simulation():
 
             self.save_data(i=i, steps=steps, found=found, taken_down=taken_down,
                            unique_cells_covered=len(unique_cells_covered),
-                           mean_distance_travelled=np.mean(distance_travelled), total_distance_covered=np.sum(distance_travelled),filename=filename)
+                           mean_distance_travelled=np.mean(distance_travelled), total_distance_covered=np.sum(distance_travelled),hider_frac_found=frac_found,filename=filename)
 
         self.generate_stats(tactic)
 
@@ -125,19 +124,22 @@ class Simulation():
         metrics_mean_distance_travelled = get_all_stats(self.mean_distance_travelled, self.runs)
         total_distance_covered = get_all_stats(self.total_distance_covered, self.runs)
 
+        metrics_frac_found = get_all_stats(self.hider_frac_found, self.runs)
+
         table = pd.DataFrame(
-            [metrics_find, metrics_taken_down, metrics_frac_area_covered, metrics_mean_distance_travelled,total_distance_covered],
-            index=["find_steps", "taken_down", "area_covered", "mean_distance_travelled","total_distance_covered"])
+            [metrics_find, metrics_taken_down, metrics_frac_area_covered, metrics_mean_distance_travelled,total_distance_covered,metrics_frac_found],
+            index=["find_steps", "taken_down", "area_covered", "mean_distance_travelled","total_distance_covered","hider_frac_found"])
         pd.set_option('display.max_rows', len(table))
         print("\n", table)
         pd.reset_option('display.max_rows')
-        print("\n Found percentage")
+        print("\n All_found percentage")
         found = self.found
         found_percentage = np.sum(found) / len(found)
         print(f"{found_percentage:.2%}")
-        table.to_csv(self.file_name, sep='\t', encoding='utf-8', header=True)
-        with open(self.file_name, "a") as f:
-            f.write(f"Found\t{found_percentage:.2%}\n")
+        if self.log:
+            table.to_csv(self.file_name, sep='\t', encoding='utf-8', header=True)
+            with open(self.file_name, "a") as f:
+                f.write(f"Found\t{found_percentage:.2%}\n")
 
 
         self.all_metrics = (table,found_percentage)
@@ -154,17 +156,22 @@ class Simulation():
 
     def run_random_walk(self, plot_boards=True, plot_interval=0.2):
         swarm = self.swarm
-        found = False
+        n_found = 0
+        n_hiders = self.board.n_hiders
+        all_found = False
         steps = 1
         for drone in swarm.swarm:
             if drone.move_next(swarm.swarm[0].start):
-                found = True
-        while (not found and not len(swarm.takenDown) == swarm.size):
+                n_found += 1
+                all_found = True if n_found == n_hiders else False
+        while not all_found and not len(swarm.takenDown) == swarm.size:
             steps += 1
             for drone in swarm.swarm:
                 if drone.random_move():
-                    found = True
-                    break
+                    n_found += 1
+                    all_found = True if n_found == n_hiders else False
+                    if all_found:
+                        break
             if plot_boards:
                 sys.stdout.write("\033[H\033[J")
                 self.board.print_board()
@@ -172,7 +179,7 @@ class Simulation():
                 time.sleep(plot_interval)
 
         # print(f"Took {r} steps and target was", "found" if found else "not found", f", {len(swarm.takenDown)} drones were taken down.")
-        return steps, found, len(swarm.takenDown)
+        return steps, all_found, len(swarm.takenDown), n_found/n_hiders
 
     def together_traverse_best_permutation(self, plot_boards=True, plot_interval=0.2):
         swarm = self.swarm
@@ -213,8 +220,8 @@ class Simulation():
         if len(board.hider_candidates) == 0:
             return 0, 0, 0
 
-        sorted_risk_cells = sorted(board.hider_candidates, key=lambda cell: cell.p, reverse=True)
-        ordered_risk_p = np.array([cell.p for cell in sorted_risk_cells])
+        sorted_risk_cells = sorted(board.hider_candidates, key=lambda cell: 1-cell.p, reverse=True)
+        ordered_risk_p = np.array([1-cell.p for cell in sorted_risk_cells])
         sorted_risk_cells = [cell.loc for cell in sorted_risk_cells]
 
         total_risk = np.sum(ordered_risk_p)
@@ -365,7 +372,9 @@ class Simulation():
         return self._run_traversal_loop_swarm(swarm, route, plot_boards, plot_interval, scanner_traversal=True)
 
     def _run_traversal_loop_swarm(self, swarm, route, plot_boards=False, plot_interval=0.2, scanner_traversal=False):
-        found = False
+        n_found = 0
+        n_hiders = self.board.n_hiders
+        all_found = False
         steps = 1
         len_route = len(route)
 
@@ -373,10 +382,11 @@ class Simulation():
             drone.set_route(route)
             swarm.to_unavailable(drone)
 
-        while not found and not len(swarm.takenDown) == swarm.size:
+        while not all_found and not len(swarm.takenDown) == swarm.size:
             for drone in swarm.swarm:
                 if drone.move_next_from_route():
-                    found = True
+                    n_found += 1
+                    all_found = True if n_found == n_hiders else False
                     # print(f"\nTarget found by Drone {drone.number} at location {drone.current_loc}!")
             if plot_boards:
                 sys.stdout.write("\033[H\033[J")
@@ -384,7 +394,7 @@ class Simulation():
                 sys.stdout.flush()
                 time.sleep(plot_interval)
 
-            if found:
+            if all_found:
                 break
             steps += 1
             if steps == len_route and scanner_traversal:
@@ -396,17 +406,20 @@ class Simulation():
 
         # self.board.plot_drone_trajectory_animated(swarm=swarm,id=1)
         swarm.remove_swarm()
-        return steps, found, len(swarm.takenDown)
+        return steps, all_found, len(swarm.takenDown),n_found/n_hiders
 
     def _run_traversal_loop_individual(self, swarm, plot_boards=False, plot_interval=0.2):
-        found = False
+        n_found = 0
+        n_hiders = self.board.n_hiders
+        all_found = False
         steps = 1
 
-        while not found and (
+        while not all_found and (
                 not len(swarm.takenDown) == swarm.size and not len(swarm.done) + len(swarm.takenDown) == swarm.size):
             for drone in swarm.swarm:
                 if drone.move_next_from_route():
-                    found = True
+                    n_found += 1
+                    all_found = True if n_found == n_hiders else False
                     # print(f"\nTarget found by Drone {drone.number} at location {drone.current_loc}!")
             if plot_boards:
                 sys.stdout.write("\033[H\033[J")
@@ -414,7 +427,7 @@ class Simulation():
                 sys.stdout.flush()
                 time.sleep(plot_interval)
 
-            if found:
+            if all_found:
                 break
             steps += 1
 
@@ -424,4 +437,4 @@ class Simulation():
         # self.board.plot_drone_trajectory_animated(swarm=swarm,id=1)
         # self.board.plot_risk_heatmap()
         swarm.remove_swarm()
-        return steps, found, len(swarm.takenDown)
+        return steps, all_found, len(swarm.takenDown),n_found/n_hiders

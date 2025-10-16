@@ -11,9 +11,8 @@ import argparse
 
 #TODO
     - Nieuwe strategieën implementeren
-        - Drone laat 'trail' achter in visited cells 
-        - Probability updating ?
-        - 
+        - Met de klok-mee naar binnen
+        - tegen de klok in naar binnen
         
     - Plots maken
 

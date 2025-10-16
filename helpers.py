@@ -1,13 +1,12 @@
-from itertools import permutations
+from itertools import permutations,combinations
 import numpy as np
-from game_config import RISK_CHANCES
+from game_config import SUCCES_PROBABILITIES
 from functools import cache
 
 def manhattan_distance(p1, p2):
     x1, y1 = p1
     x2, y2 = p2
     return abs(x1 - x2) + abs(y1 - y2)
-
 
 def total_manhattan_distance_list(list_of_points):
     tot = 0
@@ -28,7 +27,6 @@ def get_optimal_permutation_MD(start_point, target_points):
             optimal_permutation = current_path
             # print(f"optimal_permutation:{optimal_permutation}")
     return optimal_permutation, shortest_distance
-
 
 def confidence_interval(mean, var, Nruns):
     zalpha2 = 1.96
@@ -56,12 +54,50 @@ def get_all_stats(array,Nruns):
             "Half_width": ci[1]-mu,
         }
 
-
 def get_whole_and_remainder(size,divided_by):
     whole = size // divided_by
     remainder = size % divided_by
     return whole,remainder
 
+def random_succes_p():
+    return np.random.choice(SUCCES_PROBABILITIES)
 
-def random_risk():
-    return np.random.choice(RISK_CHANCES)
+def get_q_A(possible_hiding_spots,k):
+    if k> len(possible_hiding_spots):
+        raise Exception("Invalid k")
+    mapped = {cell: (1 - cell.p) / cell.p for cell in possible_hiding_spots}
+    B = set(combinations(possible_hiding_spots,k))
+
+    subset_products = []
+    for subset in B:
+        prod = 1
+        for item in subset:
+            prod*= mapped[item] # Mapped item = (1 - p) / p
+        subset_products.append(prod)
+
+    lambda_k = 1 / sum(subset_products)
+    final_q_a = {}
+
+    for prod, subset in zip(subset_products,B):
+        final_q_a[subset] = lambda_k * prod
+
+    return final_q_a
+#
+# class P_item():
+#     def __init__(self,p,name):
+#         self.p = p
+#         self.name = name
+#     def __repr__(self):
+#         return self.name
+# #
+# B = P_item(0.8,'B')
+# D = P_item(0.7,'D')
+# F = P_item(0.9,'F')
+#
+#
+# H = P_item(0.6,'H')
+# J = P_item(0.5,'J')
+#
+#
+
+# print(get_q_A([B,D,F],3))
