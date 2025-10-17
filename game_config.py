@@ -1,9 +1,6 @@
 ##############################################
 # Square board:
-square_size = 20
-
-
-WIDTH, HEIGHT = square_size,square_size  # Let's keep it square
+WIDTH = 20
 
 
 ### Drone settings ###
@@ -22,7 +19,8 @@ STATIC_P_p = .3  # Takedown chance
 ### Hider Settings ###
 NUMBER_OF_HIDER_CANDIDATES = 5
 N_HIDERS = 2
-HIDING_STRATEGY = 'random' # random | greedy | weighted  | int | list of ints
+HIDING_STRATEGY = 'greedy' # random | greedy | weighted  | int | list of ints
 
 
-##############################################
+
+

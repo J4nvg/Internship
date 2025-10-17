@@ -1,35 +1,30 @@
-from game_config import HIDING_STRATEGY
-
 NX_CUGRAPH_AUTOCONFIG=True
 import timeit
-from sim import Simulation
+from src import Simulation
 import argparse
 
 
 """
-
-
 #TODO
     - Nieuwe strategieën implementeren
-        
     - Plots maken
-
 
 valid tactics:
 
 ["ttbp","rndm","hs","vs,"dor","phs"]
 
 Swarm together:
+
 "ttbp" - Together Traverse Best Permutation
 "rndm" - Random walk [fix 1st]
 "hs" - Horizontal scan
 "vs" - Vertical scan
 
 Swarm split:
+
 "dor" - Divide over Risk
 "phs" - Partitioned Horizontal scan
 """
-
 
 def main():
     parser = argparse.ArgumentParser(description="Specify Simulation Tactic")
@@ -41,11 +36,9 @@ def main():
     parser.add_argument( '--plotspeed',default=.2, type=float,help='increase or decrease plotting speed, 0 < speed < 1')
     args = parser.parse_args()
 
-
     print(f"Starting simulation for tactic: {args.tactic} with {args.runs} runs...")
     sim = Simulation(n_runs=args.runs, log=args.log)
     sim.start_main_sim_loop_single_tactic_metrics(plot_boards=args.plot,plot_interval=args.plotspeed, tactic=args.tactic)
-
 
 
 if __name__ == "__main__":
