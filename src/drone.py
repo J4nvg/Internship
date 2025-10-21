@@ -222,7 +222,7 @@ class Drone():
         return f'\x1b[1;32;40m{self.symbol}\x1b[0m'
 
     def __repr__(self):
-        return f'{self.symbol} {self.loc}'
+        return f'{self.symbol} {self.current_loc}'
 
     # def greedy_move(self,graph,target_node):
 
