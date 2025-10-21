@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 # ================================================================
 # 1. CONFIGURATION
 # ================================================================
-DATA_DIR = "./data/sim_results"
+DATA_DIR = "../data/sim_results"
 
 # Metrics expected in CSV
 METRICS = [

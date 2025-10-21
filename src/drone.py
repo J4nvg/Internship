@@ -96,6 +96,8 @@ class Drone():
         self.symbol = symbol
         self.board = board
 
+        self.rng = np.random.default_rng()
+
         self.start = ()
         self.current_loc = ()
 
@@ -121,9 +123,12 @@ class Drone():
             return False
 
         graph = self.board.graph
+        nodes = graph.nodes
 
         next_node = to_x_y
-        next_cell = graph.nodes[next_node]['cell']
+        next_cell = nodes[next_node]['cell']
+
+
         target_found = next_cell.contains_hider
 
         current_node = self.current_loc
@@ -131,13 +136,11 @@ class Drone():
         if manhattan_distance(to_x_y,current_node) >1:
             raise Exception("Drone cannot skip cells........ Fatal error")
 
-        current_cell = graph.nodes[current_node]['cell']
+        current_cell = nodes[current_node]['cell']
 
         current_cell.remove_drone(self)
 
-        taken_down = np.random.choice([True, False], p=[1 - next_cell.p, next_cell.p])
-
-        if taken_down:
+        if self.rng.random() < (1 - next_cell.p):
             self.alive = False
             self.parent_swarm.drone_takedown(self)
             # print(f"{self} was taken down when going to {to_x_y}")
@@ -154,23 +157,27 @@ class Drone():
         return target_found
 
     def move_next_from_route(self):
-        if self.alive:
-            if self.route_length <1:
-                self.parent_swarm.done.add(self)
-                return False
-            if self.route_length == 1:
-                to_x_y = self.route.popleft()
-                self.route_length -= 1
-                found= self.move_next(to_x_y)
-                self.parent_swarm.to_available(self)
-                # print(f"Drone {self.number} has become available again")
-                return found
-            else:
-                to_x_y = self.route.popleft()
-                self.route_length -= 1
-                found= self.move_next(to_x_y)
-                return found
-        return False
+        if not self.alive:
+            return False
+
+        if self.route_length <1:
+            self.parent_swarm.done.add(self)
+            return False
+
+        if self.route_length == 1:
+            to_x_y = self.route.popleft()
+            self.route_length -= 1
+
+            found= self.move_next(to_x_y)
+
+            self.parent_swarm.to_available(self)
+            # print(f"Drone {self.number} has become available again")
+            return found
+        else:
+            to_x_y = self.route.popleft()
+            self.route_length -= 1
+            found= self.move_next(to_x_y)
+            return found
 
     def set_init_location(self,loc):
         self.current_loc = loc

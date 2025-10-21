@@ -263,9 +263,9 @@ if __name__ == "__main__":
         plot_trends_by_n_hiders(all_data, metric=metric)
     
     # 2. Heatmaps
-    print("2. Creating heatmaps...")
-    for metric in key_metrics:
-        plot_heatmap_by_tactic(all_data, metric=metric)
+    # print("2. Creating heatmaps...")
+    # for metric in key_metrics:
+    #     plot_heatmap_by_tactic(all_data, metric=metric)
     
     # 3. Grouped bar charts
     print("3. Creating grouped bar charts...")
