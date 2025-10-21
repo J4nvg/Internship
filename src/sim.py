@@ -92,7 +92,7 @@ class Simulation():
         strat,tactic = tactic_map[tactic]
 
 
-        filename = f"T{tactic}_W{self.width}_D{self.swarm_size}_C{self.n_hider_candidates}_H{self.n_hiders}_RUNS{self.runs}.csv"
+        filename = f"T-{tactic}-W-{self.width}-HS-{self.hiding_strategy}-D-{self.swarm_size}-C-{self.n_hider_candidates}-H-{self.n_hiders}-RUNS-{self.runs}.csv"
         self.file_name = filename
         if self.log:
             if os.path.exists(f"{self.log_dir}/{filename}"):
