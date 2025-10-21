@@ -2,7 +2,7 @@ import numpy as np
 import networkx as nx
 from collections import deque
 import sys, time
-
+import random
 from .helpers import manhattan_distance
 
 
@@ -203,16 +203,17 @@ class Drone():
         self.route_length = route_length
         return
 
-    def random_move(self):
-        graph = self.board.graph
-        current_node = self.current_loc
+    def random_move(self,board):
+        neighbors = board.get_neighbors(self.current_loc)
+        # graph = self.board.graph
+        # current_node = self.current_loc
 
-        possible_moves = list(graph.neighbors(current_node))
+        # possible_moves = list(graph.neighbors(current_node))
 
-        random_index = np.random.randint(0, len(possible_moves))
-        random_move = possible_moves[random_index]
-
-        return self.move_next(random_move)
+        # random_index = np.random.randint(0, len(possible_moves))
+        # random_move = possible_moves[random_index]
+        next_node = random.choice(neighbors)
+        return self.move_next(next_node)
 
 
 

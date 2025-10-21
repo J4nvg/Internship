@@ -125,8 +125,11 @@ class Board():
             self.set_hider_candidates(n_hider_candidates)
 
         self.id = idd
-
         self.graph = self.to_graph()
+
+        self.neighbor_cache = {
+            node: list(self.graph[node]) for node in self.graph
+        }
 
     def reset(self):
         """
@@ -281,6 +284,9 @@ class Board():
                 self.hiders.add(chosen_cell)
 
         return
+
+    def get_neighbors(self,current_loc):
+        return self.neighbor_cache[current_loc]
 
     def plot_q_heatmap(self):
         qs = np.array([[cell.q for cell in row] for row in self.board])

@@ -180,7 +180,7 @@ class Simulation():
         while not all_found and not len(swarm.takenDown) == swarm.size:
             steps += 1
             for drone in swarm.swarm:
-                if drone.random_move():
+                if drone.random_move(self.board):
                     n_found += 1
                     all_found = True if n_found == n_hiders else False
                     if all_found:
