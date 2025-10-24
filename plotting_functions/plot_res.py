@@ -39,10 +39,10 @@ for tact in tacts:
                     "Grid": g,
                     "Swarm_size": s,
                     "Hidercells": h,
-                    "find_steps_mean": df.loc["find_steps", "mean"],
-                    "find_steps_ci_low": df.loc["find_steps", "ci_lower"],
-                    "find_steps_ci_up": df.loc["find_steps", "ci_upper"],
-                    "find_steps_hw": df.loc["find_steps", "Half_width"],
+                    "steps_mean": df.loc["steps", "mean"],
+                    "steps_ci_low": df.loc["steps", "ci_lower"],
+                    "steps_ci_up": df.loc["steps", "ci_upper"],
+                    "steps_hw": df.loc["steps", "Half_width"],
                     "taken_down_mean": df.loc["taken_down", "mean"],
                     "taken_down_ci_low": df.loc["taken_down", "ci_lower"],
                     "taken_down_ci_up": df.loc["taken_down", "ci_upper"],
@@ -98,14 +98,14 @@ def plot_metric_w_error_bars(metric):
     plt.title(f"{metric} by Tactic, and Swarm Size")
     plt.show()
 
-# plot_metric_w_error_bars("find_steps")
+# plot_metric_w_error_bars("steps")
 # plot_metric_w_error_bars("area_covered")
 # plot_metric_w_error_bars("taken_down")
 # plot_metric_w_error_bars("mean_distance_travelled")
 plot_metric_w_error_bars("found_percentage")
 
 
-metrics = ["find_steps", "area_covered", "taken_down", "mean_distance_travelled"]
+metrics = ["steps", "area_covered", "taken_down", "mean_distance_travelled"]
 
 fig, axes = plt.subplots(2, 2, figsize=(18, 10))
 axes = axes.flatten()

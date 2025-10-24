@@ -3,16 +3,17 @@ import pandas as pd
 import csv
 import re
 
-input_folder = "./"
-output_file = "combined_dataset.csv"
+input_folder = "./data/sim_results"
+output_file = "./data/dataset/sim_results_dataset.csv"
 
 metrics = [
-    "find_steps",
+    "steps",
     "taken_down",
     "area_covered",
     "mean_distance_travelled",
     "total_distance_covered",
-    "hider_frac_found"
+    "hider_frac_found",
+    "all_found"
 ]
 
 # Output columns
@@ -20,17 +21,24 @@ columns = [
     "filename", "tactic", "grid_width", "hide_strategy",
     "swarm_size", "n_hider_candidates", "n_hiders", "runs"
 ]
+
 for metric in metrics:
-    columns.extend([
-        f"{metric}_min",
-        f"{metric}_max",
-        f"{metric}_mean",
-        f"{metric}_var",
-        f"{metric}_ci_lower",
-        f"{metric}_ci_upper",
-        f"{metric}_half_width"
-    ])
-columns.append("found")
+    if metric == "all_found":
+        columns.extend([
+            f"{metric}_mean",
+            f"{metric}_ci_lower",
+            f"{metric}_ci_upper"
+        ])
+    else:
+        columns.extend([
+            f"{metric}_min",
+            f"{metric}_max",
+            f"{metric}_mean",
+            f"{metric}_var",
+            f"{metric}_ci_lower",
+            f"{metric}_ci_upper",
+            f"{metric}_half_width"
+        ])
 
 # Regex pattern to extract info from filenames
 pattern = re.compile(
@@ -74,8 +82,15 @@ for filename in os.listdir(input_folder):
         key = row[0].strip().lower()
 
         if key in metrics:
-            try:
-                values = [float(x) for x in row[1:8]]
+            if key == "all_found":
+                values = [x for x in row[1:8]]
+                row_data.update({
+                    f"{key}_mean": values[2],
+                    f"{key}_ci_lower": values[4],
+                    f"{key}_ci_upper": values[5],
+                })
+            else:
+                values = [x for x in row[1:8]]
                 row_data.update({
                     f"{key}_min": values[0],
                     f"{key}_max": values[1],
@@ -85,17 +100,6 @@ for filename in os.listdir(input_folder):
                     f"{key}_ci_upper": values[5],
                     f"{key}_half_width": values[6],
                 })
-            except (ValueError, IndexError):
-                print(f"⚠️ Could not parse values for {key} in {filename}")
-                continue
-
-        elif key == "found":
-            try:
-                val = row[1].strip().replace("%", "")
-                row_data["found"] = float(val)
-            except (ValueError, IndexError):
-                row_data["found"] = None
-
     all_data.append(row_data)
 
 # Combine and export

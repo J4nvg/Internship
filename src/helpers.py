@@ -1,7 +1,8 @@
 from itertools import permutations,combinations
 import numpy as np
 from game_config import SUCCES_PROBABILITIES
-
+from scipy.stats import binomtest
+import networkx as nx
 
 def manhattan_distance(p1, p2):
     x1, y1 = p1
@@ -54,6 +55,23 @@ def get_all_stats(array,Nruns):
             "Half_width": ci[1]-mu,
         }
 
+def get_all_stats_binom(array,Nruns):
+    k = int(array.sum())
+    n = Nruns
+    result = binomtest(k=k, n=n)
+    p_all_hiders_found = result.statistic
+
+    ci = result.proportion_ci()
+    return {
+        "min": 'NA',
+        "max": 'NA',
+        "mean": p_all_hiders_found,
+        "var": 'NA',
+        "ci_lower": ci.low,
+        "ci_upper": ci.high,
+        "Half_width": 'NA',
+    }
+
 def get_whole_and_remainder(size,divided_by):
     whole = size // divided_by
     remainder = size % divided_by
@@ -63,6 +81,7 @@ def random_succes_p():
     return np.random.choice(SUCCES_PROBABILITIES)
 
 def get_q_A(possible_hiding_spots,k):
+
     if k> len(possible_hiding_spots):
         raise Exception("Invalid k")
     mapped = {cell: (1 - cell.p) / cell.p for cell in possible_hiding_spots}
@@ -83,7 +102,23 @@ def get_q_A(possible_hiding_spots,k):
 
     return final_q_a
 
+def route_interpolator(visit_order,start,graph,all_paths):
+    route = [start]
+    current_loc = route[0]
 
+    for next_waypoint in visit_order:
+        if current_loc == next_waypoint:
+            continue
+        if (all_paths):
+            new_route = all_paths[current_loc][next_waypoint]
+        else:
+            new_route = (
+                nx.shortest_path(graph, source=current_loc, target=next_waypoint))
+
+        route.extend(new_route[1:])
+        current_loc = next_waypoint
+
+    return route
 
 #Testing code
 # class P_item():

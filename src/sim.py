@@ -1,13 +1,12 @@
-from scipy.odr import odr_error
 from functools import cache
 from .board import Board
-from .drone import Drone, Swarm
+from .drone import  Swarm
 import numpy as np
-import sys, time
+import sys
 from game_config import HIDING_STRATEGY, WIDTH, NUMBER_OF_DRONES_IN_SWARM, DRONE_SYMBOL, NUMBER_OF_HIDER_CANDIDATES,N_HIDERS
 import networkx as nx
-from .helpers import get_optimal_permutation_MD, mean_var, confidence_interval, min_max, get_all_stats, \
-    get_whole_and_remainder
+from .helpers import get_optimal_permutation_MD, get_all_stats, get_whole_and_remainder, get_all_stats_binom, \
+    route_interpolator
 from tqdm import tqdm
 import time
 import pandas as pd
@@ -34,7 +33,7 @@ class Simulation():
 
         self.log = log
         # self.board.plot_q_heatmap()
-        self.find_steps = np.zeros(n_runs)
+        self.steps = np.zeros(n_runs)
 
         self.taken_down = np.zeros(n_runs)
 
@@ -56,10 +55,11 @@ class Simulation():
             self.all_paths = get_all_paths(width, width)
 
     def save_data(self, i, steps, all_found, taken_down, unique_cells_covered, mean_distance_travelled, total_distance_covered,hider_frac_found, filename=''):
-        self.find_steps[i] = steps
+        self.steps[i] = steps
 
         self.taken_down[i] = taken_down
 
+        all_found = int(all_found)
         self.all_found[i] = all_found
         frac_area_covered = unique_cells_covered / (self.board.width * self.board.height)
         self.frac_area_covered[i] = frac_area_covered
@@ -71,9 +71,10 @@ class Simulation():
         self.hider_frac_found[i] = hider_frac_found
 
 
+
         if filename != '':
             with open(f"{self.log_dir}/{filename}", "a") as f:
-                f.write(f"{i + 1},{steps},{all_found},{taken_down},{frac_area_covered},{mean_distance_travelled},{total_distance_covered},{hider_frac_found}\n")
+                f.write(f"{i + 1},{steps},{all_found},{taken_down},{frac_area_covered},{mean_distance_travelled},{total_distance_covered},{hider_frac_found},{all_found}\n")
 
     def start_main_sim_loop_single_tactic_metrics(self, plot_boards=False, plot_interval=0.2, tactic="ttbp"):
 
@@ -85,6 +86,7 @@ class Simulation():
             "phs": (self.partitioned_horizontal_scan_traversal,"partitioned_horizontal_scan_traversal"),
             "vs": (self.vertical_scan_traversal_swarm,"vertical_scan_traversal"),
             "sp": (self.spiral_traversal_swarm,"spiral_traversal_swarm"),
+            "lb": (self.lidbetter_swarm,"lidbetter"),
         }
 
         if tactic not in tactic_map:
@@ -99,7 +101,7 @@ class Simulation():
                     os.remove(f"{self.log_dir}/{filename}")
             with open(f"{self.log_dir}/{filename}", "a") as f:
                 f.write(f"{tactic}\n")
-                f.write(f"i,steps,all_found,taken_down,frac_area_covered,mean_distance_travelled,total_distance_covered,hider_frac_found\n")
+                f.write(f"i,steps,all_found,taken_down,frac_area_covered,mean_distance_travelled,total_distance_covered,hider_frac_found,all_found\n")
 
         iterator = tqdm(range(self.runs)) if not plot_boards else range(self.runs)
         for i in iterator:
@@ -126,41 +128,34 @@ class Simulation():
 
         print(f"Game stats for: {tactic}, nruns: {self.runs}")
         print(f"grid_w: {self.width}, grid_h {self.width}, swarm_size {self.swarm_size}")
-        metrics_find = get_all_stats(self.find_steps, self.runs)
+        metrics_find = get_all_stats(self.steps, self.runs)
 
         metrics_taken_down = get_all_stats(self.taken_down, self.runs)
+
         metrics_frac_area_covered = get_all_stats(self.frac_area_covered, self.runs)
 
         metrics_mean_distance_travelled = get_all_stats(self.mean_distance_travelled, self.runs)
+
         total_distance_covered = get_all_stats(self.total_distance_covered, self.runs)
 
         metrics_frac_found = get_all_stats(self.hider_frac_found, self.runs)
 
+        metrics_all_found = get_all_stats_binom(self.all_found, self.runs)
+
         table = pd.DataFrame(
-            [metrics_find, metrics_taken_down, metrics_frac_area_covered, metrics_mean_distance_travelled,total_distance_covered,metrics_frac_found],
-            index=["find_steps", "taken_down", "area_covered", "mean_distance_travelled","total_distance_covered","hider_frac_found"])
+            [metrics_find, metrics_taken_down, metrics_frac_area_covered, metrics_mean_distance_travelled,total_distance_covered,metrics_frac_found,metrics_all_found],
+            index=["steps", "taken_down", "area_covered", "mean_distance_travelled","total_distance_covered","hider_frac_found","all_found"])
         pd.set_option('display.max_rows', len(table))
 
         print("\n", table)
         pd.reset_option('display.max_rows')
 
-        print("\n All_found percentage")
-        all_found = self.all_found
-        all_found_percentage = np.sum(all_found) / len(all_found)
-        print(f"{all_found_percentage:.2%}")
-
         if self.log:
             table.to_csv(f"{self.res_dir}/{self.file_name}", sep='\t', encoding='utf-8', header=True)
-            with open(f"{self.res_dir}/{self.file_name}", "a") as f:
-                f.write(f"Found\t{all_found_percentage:.2%}\n")
-
-
-        self.all_metrics = (table,all_found_percentage)
-
 
         epsilon = 0.01
-        numRuns = int(np.ceil((1.96 * np.std(self.find_steps) / epsilon) ** 2))
-        print("Minimum required simulations for find_steps:", numRuns)
+        numRuns = int(np.ceil((1.96 * np.std(self.steps) / epsilon) ** 2))
+        print("Minimum required simulations for steps:", numRuns)
 
         numRuns = int(np.ceil((1.96 * np.std(self.taken_down) / epsilon) ** 2))
         print("Minimum required simulations for taken_down:", numRuns)
@@ -177,7 +172,8 @@ class Simulation():
             if drone.move_next(swarm.swarm[0].start):
                 n_found += 1
                 all_found = True if n_found == n_hiders else False
-        while not all_found and not len(swarm.takenDown) == swarm.size:
+        max_steps = self.board.width**2 * 10 # = 4000 for 20x20, while results stabilize after 2k
+        while not all_found and not len(swarm.takenDown) == swarm.size and not steps > max_steps:
             steps += 1
             for drone in swarm.swarm:
                 if drone.random_move(self.board):
@@ -210,18 +206,9 @@ class Simulation():
 
         optimal_path_sequence, shortest_total_distance = get_optimal_permutation_MD(sample_drone.start,
                                                                                     hider_candidate_locations)
+        route = route_interpolator(optimal_path_sequence,sample_drone.start,graph,self.all_paths)
 
-        route = [sample_drone.start]
-
-        for i in range(len(optimal_path_sequence) - 1):
-            if (self.all_paths):
-                new_route = self.all_paths[optimal_path_sequence[i]][optimal_path_sequence[i + 1]]
-            else:
-                new_route = (
-                    nx.shortest_path(graph, source=optimal_path_sequence[i], target=optimal_path_sequence[i + 1]))
-            route.extend(new_route[1:])
-
-        return self._run_traversal_loop_swarm(swarm, route, plot_boards, plot_interval, scanner_traversal=False)
+        return self._run_traversal_loop_swarm(swarm, route, plot_boards, plot_interval, terminate_after_route=False)
 
     def divide_over_risks(self, plot_boards=True, plot_interval=0.2):
         swarm = self.swarm
@@ -256,7 +243,7 @@ class Simulation():
         # Sort such that we get the index for biggest fractional part in idx 0 of this list
         # Distribute remaining drones over these fractional parts
         # Alternative implementation: Distribute remainders over risk cells starting at the one with the highest risk.
-        # Bc. highest fractional remainder does not necesarily mean highest risk
+        # Bc. highest fractional remainder does not necessarily mean highest risk
 
         for i in range(remainder):
             drone_assignments[indices_for_remainder[i]] += 1
@@ -277,16 +264,11 @@ class Simulation():
             for drone in drones_for_this_target:
                 swarm.to_unavailable(drone)
 
-                route = [drone.start]
                 if plot_boards:
                     print(f"allocating {drone} to {target_loc}, {c}/{num_to_assign}, {ordered_risk_p[i]}")
 
-                for checkpoint in chain:
-                    if (self.all_paths):
-                        new_route = self.all_paths[route[-1]][checkpoint]
-                    else:
-                        new_route = (nx.shortest_path(graph, source=route[-1], target=checkpoint))
-                    route.extend(new_route[1:])
+                route = route_interpolator(visit_order=chain,start=drone.start,graph=graph,all_paths=self.all_paths)
+
                 drone.set_route(route)
                 c += 1
         if plot_boards:
@@ -298,35 +280,46 @@ class Simulation():
         if not swarm.same_start:
             raise Exception(f"together_to_candidates not implemented yet for {swarm.init_strat}")
 
-        route = [swarm.swarm[0].start]
+        if not "hs" in self.board.route_cache:
 
-        for y in range(self.board.height):
-            if y % 2:
-                for x in range(self.board.width - 1, -1, -1):
-                    route.append((x, y))
-            else:
-                for x in range(self.board.width):
-                    route.append((x, y))
+            route = [swarm.swarm[0].start]
 
-        return self._run_traversal_loop_swarm(swarm, route, plot_boards, plot_interval, scanner_traversal=True)
+            for y in range(self.board.height):
+                if y % 2:
+                    for x in range(self.board.width - 1, -1, -1):
+                        route.append((x, y))
+                else:
+                    for x in range(self.board.width):
+                        route.append((x, y))
+            self.board.route_cache["hs"] = route
+        else:
+            route = self.board.route_cache["hs"]
+
+        return self._run_traversal_loop_swarm(swarm, route, plot_boards, plot_interval, terminate_after_route=True)
 
     def partitioned_horizontal_scan_traversal(self, plot_boards=True, plot_interval=0.2):
         swarm = self.swarm
 
-        snake_route_start_odd_row = []
-        snake_route_start_even_row = []
+        if not "snake_odd" in self.board.route_cache:
+            snake_route_start_odd_row = []
+            snake_route_start_even_row = []
 
-        for y in range(self.board.height):
-            if y % 2:
-                for x in range(self.board.width):
-                    snake_route_start_even_row.append((x, y))
-                for x in range(self.board.width - 1, -1, -1):
-                    snake_route_start_odd_row.append((x, y))
-            else:
-                for x in range(self.board.width - 1, -1, -1):
-                    snake_route_start_even_row.append((x, y))
-                for x in range(self.board.width):
-                    snake_route_start_odd_row.append((x, y))
+            for y in range(self.board.height):
+                if y % 2:
+                    for x in range(self.board.width):
+                        snake_route_start_even_row.append((x, y))
+                    for x in range(self.board.width - 1, -1, -1):
+                        snake_route_start_odd_row.append((x, y))
+                else:
+                    for x in range(self.board.width - 1, -1, -1):
+                        snake_route_start_even_row.append((x, y))
+                    for x in range(self.board.width):
+                        snake_route_start_odd_row.append((x, y))
+            self.board.route_cache["snake_odd"] = snake_route_start_odd_row
+            self.board.route_cache["snake_even"] = snake_route_start_even_row
+        else:
+            snake_route_start_odd_row = self.board.route_cache["snake_odd"]
+            snake_route_start_even_row = self.board.route_cache["snake_even"]
 
         drone_start_rows = {}
 
@@ -382,50 +375,85 @@ class Simulation():
                 for x in range(self.board.width):
                     route.append((y, x))
 
-        return self._run_traversal_loop_swarm(swarm, route, plot_boards, plot_interval, scanner_traversal=True)
+        return self._run_traversal_loop_swarm(swarm, route, plot_boards, plot_interval, terminate_after_route=True)
 
     def spiral_traversal_swarm(self, plot_boards=True, plot_interval=0.2):
         swarm = self.swarm
         if not swarm.same_start:
             raise Exception(f"together_to_candidates not implemented yet for {swarm.init_strat}")
 
-        route = [swarm.swarm[0].start]
+        if not "sp" in self.board.route_cache:
+            route = [swarm.swarm[0].start]
 
-        h = self.board.height
-        w = self.board.width
+            h = self.board.height
+            w = self.board.width
 
-        top, bottom = 0, h - 1
-        left, right = 0, w - 1
+            top, bottom = 0, h - 1
+            left, right = 0, w - 1
 
 
-        while left <= right and top <= bottom:
-            # left -> right along the current top row
-            for x in range(left, right + 1):
-                route.append((top, x))
-            top += 1
+            while left <= right and top <= bottom:
+                # left -> right along the current top row
+                for x in range(left, right + 1):
+                    route.append((top, x))
+                top += 1
 
-            # top -> bottom along the current right column
-            for y in range(top, bottom + 1):
-                route.append((y, right))
-            right -= 1
+                # top -> bottom along the current right column
+                for y in range(top, bottom + 1):
+                    route.append((y, right))
+                right -= 1
 
-            # right -> left along the current bottom row (if remaining)
-            if top <= bottom:
-                for x in range(right, left - 1, -1):
-                    route.append((bottom, x))
-                bottom -= 1
+                # right -> left along the current bottom row (if remaining)
+                if top <= bottom:
+                    for x in range(right, left - 1, -1):
+                        route.append((bottom, x))
+                    bottom -= 1
 
-            # bottom -> top along the current left column (if remaining)
-            if left <= right:
-                for y in range(bottom, top - 1, -1):
-                    route.append((y, left))
-                left += 1
+                # bottom -> top along the current left column (if remaining)
+                if left <= right:
+                    for y in range(bottom, top - 1, -1):
+                        route.append((y, left))
+                    left += 1
+
+            self.board.route_cache["sp"] = route
+
+        route = self.board.route_cache["sp"]
 
         return self._run_traversal_loop_swarm(
-            swarm, route, plot_boards, plot_interval, scanner_traversal=True
+            swarm, route, plot_boards, plot_interval, terminate_after_route=True
         )
 
-    def _run_traversal_loop_swarm(self, swarm, route, plot_boards=False, plot_interval=0.2, scanner_traversal=False):
+    def lidbetter_swarm(self, plot_boards=True, plot_interval=0.2):
+        swarm = self.swarm
+        if not swarm.same_start:
+            raise Exception(f"together_to_candidates not implemented yet for {swarm.init_strat}")
+        visit_cells_order = []
+
+        board = self.board
+        rng = board.rng
+        q_a_values, q_a_subset = board.qa
+
+        chosen_subset = rng.choice(q_a_values, p=q_a_subset)
+        visit_cells_order.extend([cell.loc for cell in chosen_subset])
+        all_candidates_set = set(board.hider_candidates)
+        chosen_subset_set = set(chosen_subset)
+
+        remaining_cells_list = list(all_candidates_set - chosen_subset_set)
+        rng.shuffle(remaining_cells_list)
+
+        visit_cells_order.extend([cell.loc for cell in remaining_cells_list])
+
+        start = swarm.swarm[0].start
+
+        route = route_interpolator(visit_cells_order,start,board.graph,self.all_paths)
+
+        return self._run_traversal_loop_swarm(
+            swarm, route, plot_boards, plot_interval, terminate_after_route=False
+        )
+
+
+
+    def _run_traversal_loop_swarm(self, swarm, route, plot_boards=False, plot_interval=0.2, terminate_after_route=False):
         n_found = 0
         n_hiders = self.board.n_hiders
         all_found = False
@@ -451,7 +479,7 @@ class Simulation():
             if all_found:
                 break
             steps += 1
-            if steps == len_route and scanner_traversal:
+            if steps == len_route and terminate_after_route:
                 # print("Nothing was found")
                 break
 

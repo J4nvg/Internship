@@ -109,6 +109,7 @@ class Board():
         self.width = width
         self.height = width
 
+        self.qa = None
 
         self.hiding_strategy = hiding_strategy
         self.n_hider_candidates = n_hider_candidates
@@ -129,6 +130,9 @@ class Board():
 
         self.neighbor_cache = {
             node: list(self.graph[node]) for node in self.graph
+        }
+
+        self.route_cache = {
         }
 
     def reset(self):
@@ -222,9 +226,9 @@ class Board():
 
         if tactic == "weighted" or tactic == 'greedy':
             q_a = get_q_A(self.hider_candidates,self.n_hiders)
+            q_list, subset_list = list(q_a.values()), list(q_a.keys())
 
-            q_list = [val for key, val in q_a.items()]
-            subset_list = [key for key in q_a]
+            self.qa = (subset_list, q_list)
 
             if tactic == 'weighted':
                 chosen_subset = self.rng.choice(subset_list, p=q_list)

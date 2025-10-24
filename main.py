@@ -2,6 +2,7 @@ NX_CUGRAPH_AUTOCONFIG=True
 import timeit
 from src import Simulation
 import argparse
+from src.constants import tactic_abbr_full
 
 
 """
@@ -11,29 +12,36 @@ import argparse
 
 valid tactics:
 
-["ttbp","rndm","hs","vs,"dor","phs","sp"]
+["ttbp","rndm","hs","dor","phs","sp"]
 
 Swarm together:
 
 "ttbp" - Together Traverse Best Permutation
 "rndm" - Random walk 
 "hs" - Horizontal scan
-"vs" - Vertical scan
 "sp" - Spiral
 
-Swarm split:
 
+
+Swarm split:
 "dor" - Divide over Risk
 "phs" - Partitioned Horizontal scan
+
+
 """
+
+
 
 def main():
     parser = argparse.ArgumentParser(description="Specify Simulation Tactic")
 
+
+    tactics = tactic_abbr_full.keys()
+
     parser.add_argument("--plot", action='store_true', help="plots boards to visualise the simulation run")
-    parser.add_argument("--tactic",required=False,type=str,choices=["ttbp","rndm","hs","vs","dor","phs","sp"], help="Tactic to use")
+    parser.add_argument("--tactic",required=False,type=str,choices=tactics, help="Tactic to use")
     parser.add_argument('--runs',type=int,default=1,help='Number of simulation runs.')
-    parser.add_argument( '--log', action='store_true',help='Enable logging to CSV.')
+    parser.add_argument( '--log', action='store_true',help='Enable logging to CSV.', default=False)
     parser.add_argument( '--plotspeed',default=.2, type=float,help='increase or decrease plotting speed, 0 < speed < 1')
     args = parser.parse_args()
 
