@@ -30,7 +30,7 @@ FIXED_NUMBER_OF_RUNS = 100000
 
 
 T_MIN = 0
-T_MAX = 4000
+T_MAX = 1000
 T_STEP = 10 
 T_values = np.arange(T_MIN, T_MAX + T_STEP, T_STEP)
 
@@ -49,7 +49,7 @@ filename_pattern = re.compile(
 results = {}
 tactic_files_found = []
 
-for filename in os.listdir('.'):
+for filename in os.listdir('./data/sim_logs'):
     if not filename.endswith('.csv'):
         continue
 
@@ -73,7 +73,7 @@ for filename in os.listdir('.'):
         
         tactic_files_found.append(filename)
 
-        df = pd.read_csv(filename, header=0, sep='\s+')
+        df = pd.read_csv('./data/sim_logs/'+filename, header=0, sep='\s+')
 
         successful_runs = df[df['all_hiders_found'] == True]
 
