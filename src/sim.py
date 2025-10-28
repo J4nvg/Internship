@@ -6,7 +6,7 @@ import sys
 from game_config import HIDING_STRATEGY, WIDTH, NUMBER_OF_DRONES_IN_SWARM, DRONE_SYMBOL, NUMBER_OF_HIDER_CANDIDATES,N_HIDERS
 import networkx as nx
 from .helpers import get_optimal_permutation_MD, get_all_stats, get_whole_and_remainder, get_all_stats_binom, \
-    route_interpolator
+    route_interpolator, manhattan_distance, best_route_discount_distance
 from tqdm import tqdm
 import time
 import pandas as pd
@@ -72,7 +72,7 @@ class Simulation():
 
 
 
-        if filename != '':
+        if self.log:
             with open(f"{self.log_dir}/{filename}", "a") as f:
                 f.write(f"{i + 1},{steps},{all_found},{taken_down},{frac_area_covered},{mean_distance_travelled},{total_distance_covered},{hider_frac_found},{all_found}\n")
 
@@ -87,6 +87,9 @@ class Simulation():
             "vs": (self.vertical_scan_traversal_swarm,"vertical_scan_traversal"),
             "sp": (self.spiral_traversal_swarm,"spiral_traversal_swarm"),
             "lb": (self.lidbetter_swarm,"lidbetter"),
+            "toq": (self.traverse_ordered_qa,"traverse_ordered_qa"),
+            "tpq": (self.traverse_weighted_qa,"traverse_p_qa"),
+            "dd": (self.discounted_distance,"discounted_distance"),
         }
 
         if tactic not in tactic_map:
@@ -431,9 +434,8 @@ class Simulation():
 
         board = self.board
         rng = board.rng
-        q_a_values, q_a_subset = board.qa
-
-        chosen_subset = rng.choice(q_a_values, p=q_a_subset)
+        q_a_subset,q_a_values = board.qa
+        chosen_subset = rng.choice(q_a_subset, p=q_a_values)
         visit_cells_order.extend([cell.loc for cell in chosen_subset])
         all_candidates_set = set(board.hider_candidates)
         chosen_subset_set = set(chosen_subset)
@@ -451,6 +453,99 @@ class Simulation():
             swarm, route, plot_boards, plot_interval, terminate_after_route=False
         )
 
+    def traverse_ordered_qa(self, plot_boards=True, plot_interval=0.2):
+        swarm = self.swarm
+        graph = self.board.graph
+        board = self.board
+        if not swarm.same_start:
+            raise Exception(f"together_to_candidates not implemented yet for {swarm.init_strat}")
+
+        q_a_subset,q_a_values = board.qa
+
+        zipped_list = list(zip(q_a_values, q_a_subset))
+        sorted_pairs = sorted(zipped_list, key=lambda x: x[0],reverse=True)
+        q_a_values_sorted, q_a_subset_sorted = zip(*sorted_pairs)
+        # q_a_values = list(q_a_values_sorted)
+        q_a_subset = list(q_a_subset_sorted)
+
+        start = swarm.available[0].start
+        num_subsets = len(q_a_subset)
+
+        # print("Q_A_VALUES")
+        # print([f"{x:.2f}" for x in q_a_values])
+        # print("Q_A_subsets")
+        # print([[cell.loc for cell in subset] for subset in q_a_subset])
+        # print("\n")
+
+        # assigns route drone 1 to q_a_subset[0], [1], [2], ..., q_a_subset[n]
+        # assigns route drone 2 to q_a_subset[1], [2], [n], ..., q_a_subset[0] etc.
+        for i, drone in enumerate(swarm.available):
+            visit_cells_order = [start]
+            start_index = i % num_subsets  # i.e. wraps around
+            for j in range(num_subsets):
+                current_idx = (start_index + j) % num_subsets # i.e. wraps around
+                subset = q_a_subset[current_idx]
+                for cell in subset:
+                    visit_cells_order.append(cell.loc)
+
+            fullroute = route_interpolator(visit_cells_order,start,graph,self.all_paths)
+            # print(f"allocating {drone} to visit order {visit_cells_order}")
+            drone.set_route(fullroute)
+        # if plot_boards:
+        #     time.sleep(2)
+        return self._run_traversal_loop_individual(swarm, plot_boards, plot_interval)
+
+    def traverse_weighted_qa(self, plot_boards=True, plot_interval=0.2):
+        swarm = self.swarm
+        graph = self.board.graph
+        board = self.board
+        if not swarm.same_start:
+            raise Exception(f"together_to_candidates not implemented yet for {swarm.init_strat}")
+
+        rng = board.rng
+
+        q_a_subset, q_a_values = board.qa
+        # print("Q_A_VALUES")
+        # print([f"{x:.2f}" for x in q_a_values])
+        # print("Q_A_subsets")
+        # print([[cell.loc for cell in subset] for subset in q_a_subset])
+        # print("\n")
+
+        start = swarm.available[0].start
+        # selecting and adding a weighted-random subset, and then adding all remaining candidate cells in a shuffled (uniform random) order.
+        # i.e. lidbetter but independent per drone
+        for drone in swarm.available:
+            visit_cells_order = [start]
+
+            chosen_subset = rng.choice(q_a_subset, p=q_a_values)
+            visit_cells_order.extend([cell.loc for cell in chosen_subset])
+            all_candidates_set = set(board.hider_candidates)
+            chosen_subset_set = set(chosen_subset)
+
+            remaining_cells_list = list(all_candidates_set - chosen_subset_set)
+            rng.shuffle(remaining_cells_list)
+            visit_cells_order.extend([cell.loc for cell in remaining_cells_list])
+
+            fullroute = route_interpolator(visit_cells_order, start, graph, self.all_paths)
+            # print(f"allocating {drone} to visit order {visit_cells_order}")
+            drone.set_route(fullroute)
+        # if plot_boards:
+        #     time.sleep(2)
+        return self._run_traversal_loop_individual(swarm, plot_boards, plot_interval)
+
+    def discounted_distance(self, plot_boards=True, plot_interval=0.2):
+        swarm = self.swarm
+        graph = self.board.graph
+        board = self.board
+        if not swarm.same_start:
+            raise Exception(f"together_to_candidates not implemented yet for {swarm.init_strat}")
+        start_loc = swarm.available[0].start
+        start_cell = graph.nodes[start_loc]['cell']
+
+        visit_cells_order = best_route_discount_distance(board.hider_candidates, start_cell)
+        fullroute = route_interpolator(visit_cells_order,start_loc,graph,self.all_paths)
+
+        return self._run_traversal_loop_swarm(swarm, fullroute, plot_boards, plot_interval, terminate_after_route=True)
 
 
     def _run_traversal_loop_swarm(self, swarm, route, plot_boards=False, plot_interval=0.2, terminate_after_route=False):

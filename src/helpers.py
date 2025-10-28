@@ -105,7 +105,6 @@ def get_q_A(possible_hiding_spots,k):
 def route_interpolator(visit_order,start,graph,all_paths):
     route = [start]
     current_loc = route[0]
-
     for next_waypoint in visit_order:
         if current_loc == next_waypoint:
             continue
@@ -119,6 +118,33 @@ def route_interpolator(visit_order,start,graph,all_paths):
         current_loc = next_waypoint
 
     return route
+
+def discounted_distance(p1,p2,p2p):
+    d = manhattan_distance(p1,p2)
+    return d * (1-p2p)
+
+def total_discounted_distance(list_of_points):
+    tot = 0
+    for i in range(len(list_of_points)-1):
+            tot += discounted_distance(list_of_points[i].loc, list_of_points[i+1].loc, list_of_points[i+1].p)
+    return tot
+
+def best_route_discount_distance(hider_candidates,start_location):
+    permutation_list = permutations(hider_candidates)
+    shortest_distance = float("inf")
+    optimal_permutation = None
+    for perm_of_targets in permutation_list:
+        current_path = [start_location] + list(perm_of_targets)
+        tot_dist = total_discounted_distance(current_path)
+        # print(f"dist:{tot_dist}, for {current_path}")
+        if tot_dist < shortest_distance:
+            shortest_distance = tot_dist
+            optimal_permutation = current_path
+    optimal_permutation = [cell.loc for cell in optimal_permutation]
+    # print(f"optimal_permutation:{optimal_permutation}")
+    return optimal_permutation
+
+
 
 #Testing code
 # class P_item():

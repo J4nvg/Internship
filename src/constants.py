@@ -7,5 +7,8 @@ tactic_abbr_full = {
     # "vs":"vertical_scan_traversal",
     "sp": "spiral_traversal_swarm",
     "lb": "lidbetter",
+    "toq": "traverse_ordered_qa",
+    "tpq":"traverse_weighted_qa",
+    "dd":"discounted_distance",
 }
 

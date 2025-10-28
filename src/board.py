@@ -18,7 +18,7 @@ class Cell():
         :param FLOAT q: Initial hiding chance q of the cell, 0 by default
         """
         self.loc = loc
-        self.p = 0 # success probability
+        self.p = 1 # success probability
         self.q = q # Hiding chance
         self.contains_hider = False
         self.found = False
