@@ -36,7 +36,7 @@ def main():
 
     swarm_size_to_try = [1,5,10]
 
-    searching_strategy_to_try = ["ttbp"]
+    searching_strategy_to_try = ["lb"]
 
     for strategy in searching_strategy_to_try:
         for hiding_strategy in hiding_strategy_to_try:

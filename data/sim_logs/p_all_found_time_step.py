@@ -5,7 +5,19 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import binomtest
 import matplotlib.colors as mcolors
-
+tactic_abbr_full = {
+    "ttbp":"together_traverse_best_permutation",
+    "dor":"divide_over_risks",
+    "rndm":"random_walk",
+    "hs":"horizontal_scan_traversal",
+    "phs":"partitioned_horizontal_scan_traversal",
+    # "vs":"vertical_scan_traversal",
+    "sp": "spiral_traversal_swarm",
+    "lb": "lidbetter",
+    "toq": "traverse_ordered_qa",
+    "tpq":"traverse_weighted_qa",
+    "dd":"discounted_distance",
+}
 
 FIXED_SWARM_SIZE = 10
 FIXED_HIDING_STRATEGY = 'greedy'
@@ -93,13 +105,15 @@ for filename in os.listdir('.'):
         }
 
 
+all_tactic_names = sorted(tactic_abbr_full.values())
+colors_list = plt.cm.tab10(np.linspace(0, 1, len(all_tactic_names)))
+tactic_colors = {tactic: color for tactic, color in zip(all_tactic_names, colors_list)}
 
 plt.figure(figsize=(10, 6))
 ax = plt.gca()
-colors = plt.cm.tab10(np.linspace(0, 1, len(results)))
 
 for i, (tactic_name, data) in enumerate(results.items()):
-    color = colors[i]
+    color = tactic_colors[tactic_name]
     
     # Plot the main probability line
     ax.plot(

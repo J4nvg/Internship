@@ -8,7 +8,7 @@ from dash import dcc, html
 from dash.dependencies import Input, Output, State
 import plotly.graph_objects as go
 import plotly.express as px
-
+from src.constants import tactic_abbr_full
 # --- 1. CONFIGURATION ---
 
 # Directory to scan for CSV files
