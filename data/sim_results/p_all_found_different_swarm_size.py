@@ -13,7 +13,7 @@ tactic_abbr_full = {
     "sp": "spiral_traversal_swarm",
     "lb": "lidbetter",
     "toq": "traverse_ordered_qa",
-    "tpq":"traverse_weighted_qa",
+    "tpq":"traverse_p_qa",
     "dd":"discounted_distance",
 }
 
