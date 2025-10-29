@@ -74,7 +74,7 @@ class Simulation():
 
         if self.log:
             with open(f"{self.log_dir}/{filename}", "a") as f:
-                f.write(f"{i + 1},{steps},{all_found},{taken_down},{frac_area_covered},{mean_distance_travelled},{total_distance_covered},{hider_frac_found},{all_found}\n")
+                f.write(f"{i + 1},{steps},{all_found},{taken_down},{frac_area_covered},{mean_distance_travelled},{total_distance_covered},{hider_frac_found}\n")
 
     def start_main_sim_loop_single_tactic_metrics(self, plot_boards=False, plot_interval=0.2, tactic="ttbp"):
 
@@ -104,7 +104,7 @@ class Simulation():
                     os.remove(f"{self.log_dir}/{filename}")
             with open(f"{self.log_dir}/{filename}", "a") as f:
                 f.write(f"{tactic}\n")
-                f.write(f"i,steps,all_found,taken_down,frac_area_covered,mean_distance_travelled,total_distance_covered,hider_frac_found,all_found\n")
+                f.write(f"i,steps,all_found,taken_down,frac_area_covered,mean_distance_travelled,total_distance_covered,hider_frac_found\n")
 
         iterator = tqdm(range(self.runs)) if not plot_boards else range(self.runs)
         for i in iterator:

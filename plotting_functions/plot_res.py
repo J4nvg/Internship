@@ -1,144 +1,283 @@
-import matplotlib.pyplot as plt
-import pandas as pd
-import seaborn as sns
 import os
-from src.constants import tactic_abbr_full
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.stats import binomtest
+import re
 
-tacts = []
+# Tactic abbreviation mapping
+tactic_abbr_full = {
+    "ttbp": "together_traverse_best_permutation",
+    "dor": "divide_over_risks",
+    "rndm": "random_walk",
+    "hs": "horizontal_scan_traversal",
+    "phs": "partitioned_horizontal_scan_traversal",
+    "sp": "spiral_traversal_swarm",
+    "lb": "lidbetter",
+    "toq": "traverse_ordered_qa",
+    "tpq": "traverse_p_qa",
+    "dd": "discounted_distance",
+}
 
-for key,value in tactic_abbr_full.items():
-    tacts.append(value)
+# ====================
+# CONFIGURATION
+# ====================
+HIDING_STRATEGIES = ['greedy', 'random', 'weighted']  # List of hiding strategies to plot
+SWARM_SIZES = [5, 10, 15]  # List of swarm sizes to plot
+N_HIDERS_LIST = [2]  # List of number of hiders to plot
 
+# Fixed parameters
+FIXED_HIDING_CANDIDATES = 5
+FIXED_GRID_WIDTH = 20
+FIXED_NUMBER_OF_RUNS = 100000
 
-cwd = os.getcwd()
-current_folder = cwd.split("\\")[-1]
+# For time-based plots
+T_MIN = 0
+T_MAX = 1000
+T_STEP = 10
+T_values = np.arange(T_MIN, T_MAX + T_STEP, T_STEP)
 
-grid_size = [20]
-swarm_size = [1, 5, 10]
-hider_candidates = [5]
-n_hiders = [1,2,3,4,5]
-
-records = []
-
-
-for tact in tacts:
-    for g in grid_size:
-        for s in swarm_size:
-            for h in hider_candidates:
-                path = f"./data/def_sim_res/{tact}_{g}_{s}_{h}.csv"
-                if current_folder == "plotting_functions":
-                    path = f"../data/def_sim_res/{tact}_{g}_{s}_{h}.csv"
-
-                if not os.path.exists(path):
-                    continue
-                
-                df = pd.read_csv(path, sep=r"\s+", index_col=0)
-                
-                records.append({
-                    "Tactic": tact,
-                    "Grid": g,
-                    "Swarm_size": s,
-                    "Hidercells": h,
-                    "steps_mean": df.loc["steps", "mean"],
-                    "steps_ci_low": df.loc["steps", "ci_lower"],
-                    "steps_ci_up": df.loc["steps", "ci_upper"],
-                    "steps_hw": df.loc["steps", "Half_width"],
-                    "taken_down_mean": df.loc["taken_down", "mean"],
-                    "taken_down_ci_low": df.loc["taken_down", "ci_lower"],
-                    "taken_down_ci_up": df.loc["taken_down", "ci_upper"],
-                    "taken_down_hw": df.loc["taken_down", "Half_width"],
-                    "mean_distance_travelled_mean": df.loc["mean_distance_travelled", "mean"],
-                    "mean_distance_travelled_ci_low": df.loc["mean_distance_travelled", "ci_lower"],
-                    "mean_distance_travelled_ci_up": df.loc["mean_distance_travelled", "ci_upper"],
-                    "mean_distance_travelled_hw": df.loc["mean_distance_travelled", "Half_width"],
-                    "area_covered_mean": df.loc["area_covered", "mean"],
-                    "area_covered_ci_low": df.loc["area_covered", "ci_lower"],
-                    "area_covered_ci_up": df.loc["area_covered", "ci_upper"],
-                    "area_covered_hw": df.loc["area_covered", "Half_width"],
-                    "found_percentage": float(df.loc["Found", "min"].strip("%")),
-                })
+# File paths
+SUMMARY_FILENAME = '../data/dataset/sim_results_dataset.csv'
+SIMLOGS = "../data/sim_logs/"
 
 
+# ====================
+# HELPER FUNCTIONS
+# ====================
 
-all_data = pd.DataFrame(records)
-print(all_data.head())
-
-
-def plot_metric_w_error_bars(metric):
-    plt.figure(figsize=(12,6))
-    if metric == 'found_percentage':
-        ax = sns.barplot(data=all_data,x="Tactic",y=f"{metric}",hue="Swarm_size",errorbar=None,  )
-        hue_cats = sorted(all_data["Swarm_size"].unique())
-        num_hue = len(hue_cats)
-        for i in range(num_hue):
-            ax.bar_label(ax.containers[i], fontsize=10)
-    else:
-        sns.barplot(data=all_data,x="Tactic",y=f"{metric}_mean",hue="Swarm_size",errorbar=None,  )
-
-        ax = plt.gca()
-        x_cats = all_data["Tactic"].unique()
-        hue_cats = sorted(all_data["Swarm_size"].unique())
-        num_hue = len(hue_cats)
-        bar_width = 0.8 / num_hue  
+def get_tactic_colors():
+    """Generate consistent colors for all tactics"""
+    all_tactic_names = sorted(tactic_abbr_full.values())
+    colors_list = plt.cm.tab10(np.linspace(0, 1, len(all_tactic_names)))
+    return {tactic: color for tactic, color in zip(all_tactic_names, colors_list)}
 
 
-        for xi, tactic in enumerate(x_cats):
-            for hi, swarm in enumerate(hue_cats):
-                sub = all_data[(all_data["Tactic"] == tactic) & (all_data["Swarm_size"] == swarm)]
-                if sub.empty:
-                    continue
-                y = sub[f"{metric}_mean"].values[0]
-                hw = sub[f"{metric}_hw"].values[0]
+def plot_prob_vs_swarm_size(df_all, hiding_strategy, n_hiders, tactic_colors):
+    """Create plot: Probability vs Swarm Size"""
+    df_filtered = df_all[
+        (df_all['hide_strategy'] == hiding_strategy) &
+        (df_all['n_hiders'] == n_hiders) &
+        (df_all['n_hider_candidates'] == FIXED_HIDING_CANDIDATES) &
+        (df_all['grid_width'] == FIXED_GRID_WIDTH) &
+        (df_all['runs'] == FIXED_NUMBER_OF_RUNS)
+        ]
 
-                x = xi - 0.4 + bar_width/2 + hi*bar_width
-                ax.errorbar(x, y, yerr=hw, fmt="none", c="black", capsize=3, lw=1)
+    if df_filtered.empty:
+        print(f"No data for HS={hiding_strategy}, Hiders={n_hiders}")
+        return None
 
-        plt.xticks(rotation=45)
-    plt.tight_layout()
-    plt.title(f"{metric} by Tactic, and Swarm Size")
-    plt.show()
+    all_swarm_sizes = sorted(df_filtered['swarm_size'].unique())
+    results = {}
 
-# plot_metric_w_error_bars("steps")
-# plot_metric_w_error_bars("area_covered")
-# plot_metric_w_error_bars("taken_down")
-# plot_metric_w_error_bars("mean_distance_travelled")
-plot_metric_w_error_bars("found_percentage")
+    for tactic_name in df_filtered['tactic'].unique():
+        df_tactic = df_filtered[df_filtered['tactic'] == tactic_name]
+        df_tactic = df_tactic.sort_values(by='swarm_size')
 
+        results[tactic_name] = {
+            'swarm_sizes': df_tactic['swarm_size'].values,
+            'P': df_tactic['all_found_mean'].values,
+            'low': df_tactic['all_found_ci_lower'].values,
+            'high': df_tactic['all_found_ci_upper'].values
+        }
 
-metrics = ["steps", "area_covered", "taken_down", "mean_distance_travelled"]
-
-fig, axes = plt.subplots(2, 2, figsize=(18, 10))
-axes = axes.flatten()
-
-x_cats = all_data["Tactic"].unique()
-hue_cats = sorted(all_data["Swarm_size"].unique())
-num_hue = len(hue_cats)
-bar_width = 0.8 / num_hue  
-
-for ax, metric in zip(axes, metrics):
-    sns.barplot(
-        data=all_data,
-        x="Tactic",
-        y=f"{metric}_mean",
-        hue="Swarm_size",
-        errorbar=None,
-        ax=ax,
-        dodge=True
+    sorted_results = sorted(
+        results.items(),
+        key=lambda item: item[1]['P'][-1] if len(item[1]['P']) > 0 else -1,
+        reverse=True
     )
 
-    for xi, tactic in enumerate(x_cats):
-        for hi, swarm in enumerate(hue_cats):
-            sub = all_data[(all_data["Tactic"] == tactic) & (all_data["Swarm_size"] == swarm)]
-            if sub.empty:
-                continue
-            y = sub[f"{metric}_mean"].values[0]
-            hw = sub[f"{metric}_hw"].values[0]
-            x = xi - 0.4 + bar_width/2 + hi*bar_width
-            ax.errorbar(x, y, yerr=hw, fmt="none", c="black", capsize=3, lw=1)
+    fig = plt.figure(figsize=(10, 6))
+    ax = plt.gca()
 
-    ax.set_title(f"{metric.replace('_', ' ').title()} by Tactic and Swarm Size")
-    ax.tick_params(axis='x', rotation=25)
+    for tactic_name, data in sorted_results:
+        if not len(data['swarm_sizes']):
+            continue
 
-plt.tight_layout()
-# plt.title(f"Metrics by Tactic, and Swarm Size on 20x20 grid")
-plt.show()
+        color = tactic_colors.get(tactic_name, 'gray')
+
+        ax.plot(
+            data['swarm_sizes'],
+            data['P'],
+            label=tactic_name,
+            color=color,
+            linewidth=2,
+            marker='o',
+            markersize=8
+        )
+
+        ax.fill_between(
+            data['swarm_sizes'],
+            data['low'],
+            data['high'],
+            alpha=0.15,
+            color=color
+        )
+
+    ax.set_xlabel('Swarm Size', fontsize=12)
+    ax.set_ylabel('P(All Found)', fontsize=12)
+    title = (
+        f'Probability of All Hiders Found vs. Swarm Size\n'
+        f'Hiders={n_hiders}, HS={hiding_strategy}, '
+        f'Grid={FIXED_GRID_WIDTH}x{FIXED_GRID_WIDTH}'
+    )
+    ax.set_title(title, fontsize=14)
+    ax.legend(loc='upper left', title='Tactics')
+    ax.set_ylim(0, 1)
+    ax.set_xticks(all_swarm_sizes)
+    ax.grid(True, linestyle='--', alpha=0.6)
+
+    plt.tight_layout()
+    return fig
+
+
+def plot_prob_vs_time(hiding_strategy, swarm_size, n_hiders, tactic_colors):
+    """Create plot: Probability vs Time (Stepslimit)"""
+    filename_pattern = re.compile(
+        r"T-(.+)"
+        r"-W-(\d+)"
+        r"-HS-(.+)"
+        r"-D-(\d+)"
+        r"-C-(\d+)"
+        r"-H-(\d+)"
+        r"-RUNS-(\d+)\.csv"
+    )
+
+    results = {}
+
+    for filename in os.listdir(SIMLOGS):
+        if not filename.endswith('.csv'):
+            continue
+
+        match = filename_pattern.match(filename)
+        if not match:
+            continue
+
+        tactic = match.group(1)
+        width = int(match.group(2))
+        hs = match.group(3)
+        swarm = int(match.group(4))
+        candidates = int(match.group(5))
+        hiders = int(match.group(6))
+        runs = int(match.group(7))
+
+        if (swarm == swarm_size and
+                hs == hiding_strategy and
+                candidates == FIXED_HIDING_CANDIDATES and
+                hiders == n_hiders and
+                width == FIXED_GRID_WIDTH and
+                runs == FIXED_NUMBER_OF_RUNS):
+
+            df = pd.read_csv(os.path.join(SIMLOGS, filename), header=0, sep=r'\s+')
+            successful_runs = df[df['all_found'] == True]
+
+            probabilities = []
+            ci_low = []
+            ci_high = []
+
+            for T in T_values:
+                k_success_within_T = (successful_runs['steps'] <= T).sum()
+                result = binomtest(k=k_success_within_T, n=FIXED_NUMBER_OF_RUNS)
+
+                probabilities.append(result.statistic)
+                ci = result.proportion_ci()
+                ci_low.append(ci.low)
+                ci_high.append(ci.high)
+
+            results[tactic] = {
+                'T': T_values,
+                'P': probabilities,
+                'low': ci_low,
+                'high': ci_high
+            }
+
+    if not results:
+        print(f"No time data for HS={hiding_strategy}, Swarm={swarm_size}, Hiders={n_hiders}")
+        return None
+
+    sorted_results = sorted(
+        results.items(),
+        key=lambda item: item[1]['P'][-1],
+        reverse=True
+    )
+
+    fig = plt.figure(figsize=(10, 6))
+    ax = plt.gca()
+
+    for tactic_name, data in sorted_results:
+        color = tactic_colors.get(tactic_name, 'gray')
+
+        ax.plot(
+            data['T'],
+            data['P'],
+            label=tactic_name,
+            color=color,
+            linewidth=2
+        )
+
+        ax.fill_between(
+            data['T'],
+            data['low'],
+            data['high'],
+            alpha=0.2,
+            color=color
+        )
+
+    ax.set_xlabel('Stepslimit T', fontsize=12)
+    ax.set_ylabel('P(All Found | steps $\leq$ T)', fontsize=12)
+    title = (
+        f'Probability of All Hiders Found vs. Stepslimit (T)\n'
+        f'Swarm Size={swarm_size}, Hiders={n_hiders}, '
+        f'Grid={FIXED_GRID_WIDTH}x{FIXED_GRID_WIDTH}, HS={hiding_strategy}'
+    )
+    ax.set_title(title, fontsize=14)
+    ax.legend(loc='lower right', title='Tactics')
+    ax.set_ylim(0, 1)
+    ax.set_xlim(T_MIN, T_MAX)
+    ax.set_xticks(np.arange(T_MIN, T_MAX, 100))
+    ax.grid(True, linestyle='--', alpha=0.6)
+
+    plt.tight_layout()
+    return fig
+
+
+# ====================
+# MAIN EXECUTION
+# ====================
+
+def main():
+    # Load data
+    print("Loading data...")
+    df_all = pd.read_csv(SUMMARY_FILENAME)
+    tactic_colors = get_tactic_colors()
+
+    figures = []
+
+    # Generate Probability vs Swarm Size plots
+    print("\nGenerating Probability vs Swarm Size plots...")
+    for hiding_strategy in HIDING_STRATEGIES:
+        for n_hiders in N_HIDERS_LIST:
+            print(f"  - HS={hiding_strategy}, Hiders={n_hiders}")
+            fig = plot_prob_vs_swarm_size(df_all, hiding_strategy, n_hiders, tactic_colors)
+            if fig:
+                figures.append(fig)
+
+    # Generate Probability vs Time plots
+    print("\nGenerating Probability vs Time plots...")
+    for hiding_strategy in HIDING_STRATEGIES:
+        for swarm_size in SWARM_SIZES:
+            for n_hiders in N_HIDERS_LIST:
+                print(f"  - HS={hiding_strategy}, Swarm={swarm_size}, Hiders={n_hiders}")
+                fig = plot_prob_vs_time(hiding_strategy, swarm_size, n_hiders, tactic_colors)
+                if fig:
+                    figures.append(fig)
+
+    print(f"\n{'=' * 50}")
+    print(f"Total plots generated: {len(figures)}")
+    print(f"{'=' * 50}")
+    print("\nAll plots are now open. Close windows to exit.")
+    plt.show()
+
+
+if __name__ == "__main__":
+    main()
