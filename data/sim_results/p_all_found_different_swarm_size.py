@@ -3,7 +3,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import sys
-
 tactic_abbr_full = {
     "ttbp":"together_traverse_best_permutation",
     "dor":"divide_over_risks",
@@ -17,6 +16,8 @@ tactic_abbr_full = {
     "tpq":"traverse_weighted_qa",
     "dd":"discounted_distance",
 }
+
+
 
 
 
@@ -68,6 +69,8 @@ all_tactic_names = sorted(tactic_abbr_full.values())
 colors_list = plt.cm.tab10(np.linspace(0, 1, len(all_tactic_names)))
 tactic_colors = {tactic: color for tactic, color in zip(all_tactic_names, colors_list)}
     
+print(all_tactic_names)
+
 plt.figure(figsize=(10, 6))
 ax = plt.gca()
 

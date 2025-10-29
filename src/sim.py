@@ -491,6 +491,7 @@ class Simulation():
             fullroute = route_interpolator(visit_cells_order,start,graph,self.all_paths)
             # print(f"allocating {drone} to visit order {visit_cells_order}")
             drone.set_route(fullroute)
+            swarm.to_unavailable(drone)
         # if plot_boards:
         #     time.sleep(2)
         return self._run_traversal_loop_individual(swarm, plot_boards, plot_interval)
@@ -529,6 +530,7 @@ class Simulation():
             fullroute = route_interpolator(visit_cells_order, start, graph, self.all_paths)
             # print(f"allocating {drone} to visit order {visit_cells_order}")
             drone.set_route(fullroute)
+            swarm.to_unavailable(drone)
         # if plot_boards:
         #     time.sleep(2)
         return self._run_traversal_loop_individual(swarm, plot_boards, plot_interval)

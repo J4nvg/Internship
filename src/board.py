@@ -224,26 +224,33 @@ class Board():
             return
         chosen_cell = None
 
+        q_a = get_q_A(self.hider_candidates,self.n_hiders)
+        q_list, subset_list = list(q_a.values()), list(q_a.keys())
+
+        self.qa = (subset_list, q_list)
+
         if tactic == "weighted" or tactic == 'greedy':
-            q_a = get_q_A(self.hider_candidates,self.n_hiders)
-            q_list, subset_list = list(q_a.values()), list(q_a.keys())
-
-            self.qa = (subset_list, q_list)
-
+            
             if tactic == 'weighted':
                 chosen_subset = self.rng.choice(subset_list, p=q_list)
+                for cell in chosen_subset:
+                    cell.set_hider()
+                    self.hider = cell.loc
+                    self.hiders.add(cell.loc)
 
             elif tactic == 'greedy':
                 chosen_subset = subset_list[np.argmax(q_list)]
+                for cell in chosen_subset:
+                    cell.set_hider()
+                    self.hider = cell.loc
+                    self.hiders.add(cell.loc)
+
 
             for subset in subset_list:
                 for cell in subset:
                     cell.q = q_a[subset]
+            
 
-            for cell in chosen_subset:
-                cell.set_hider()
-                self.hider = cell.loc
-                self.hiders.add(cell.loc)
 
 
             #     print("\n","printing the chosen cell")

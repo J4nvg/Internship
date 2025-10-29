@@ -15,9 +15,11 @@ tactic_abbr_full = {
     "sp": "spiral_traversal_swarm",
     "lb": "lidbetter",
     "toq": "traverse_ordered_qa",
-    "tpq":"traverse_weighted_qa",
+    "tpq":"traverse_p_qa",
     "dd":"discounted_distance",
 }
+
+
 
 FIXED_SWARM_SIZE = 10
 FIXED_HIDING_STRATEGY = 'greedy'
@@ -106,6 +108,7 @@ for filename in os.listdir('./data/sim_logs'):
 
 
 all_tactic_names = sorted(tactic_abbr_full.values())
+
 colors_list = plt.cm.tab10(np.linspace(0, 1, len(all_tactic_names)))
 tactic_colors = {tactic: color for tactic, color in zip(all_tactic_names, colors_list)}
 
