@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from scipy.stats import binomtest
 import re
 
+
 # Tactic abbreviation mapping
 tactic_abbr_full = {
     "ttbp": "together_traverse_best_permutation",
@@ -23,8 +24,10 @@ tactic_abbr_full = {
 # CONFIGURATION
 # ====================
 HIDING_STRATEGIES = ['greedy', 'random', 'weighted']  # List of hiding strategies to plot
-SWARM_SIZES = [5, 10, 15]  # List of swarm sizes to plot
-N_HIDERS_LIST = [2]  # List of number of hiders to plot
+SWARM_SIZES = [1,5, 10]  # List of swarm sizes to plot
+N_HIDERS_LIST = [1]  # List of number of hiders to plot
+PLOT_DIR = os.path.join("..", "plots", f"H{N_HIDERS_LIST[0]}")
+os.makedirs(PLOT_DIR, exist_ok=True)
 
 # Fixed parameters
 FIXED_HIDING_CANDIDATES = 5
@@ -128,6 +131,8 @@ def plot_prob_vs_swarm_size(df_all, hiding_strategy, n_hiders, tactic_colors):
     ax.grid(True, linestyle='--', alpha=0.6)
 
     plt.tight_layout()
+    plt.savefig(os.path.join(PLOT_DIR, f"psucces_givenswarmsize_hiders_{n_hiders}_hidingstrat_{hiding_strategy}.svg"),bbox_inches="tight")
+
     return fig
 
 
@@ -238,6 +243,7 @@ def plot_prob_vs_time(hiding_strategy, swarm_size, n_hiders, tactic_colors):
     ax.grid(True, linestyle='--', alpha=0.6)
 
     plt.tight_layout()
+    plt.savefig(os.path.join(PLOT_DIR, f"psucces_giventime_swarmsize_{swarm_size}_hiders_{n_hiders}_hidingstrat_{hiding_strategy}.svg"),bbox_inches="tight")
     return fig
 
 

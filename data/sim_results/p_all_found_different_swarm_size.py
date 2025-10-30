@@ -18,8 +18,6 @@ tactic_abbr_full = {
 
 
 
-
-
 SUMMARY_FILENAME = './data/dataset/sim_results_dataset.csv'
 
 FIXED_HIDING_STRATEGY = 'greedy'
