@@ -6,11 +6,12 @@ import sys
 from game_config import HIDING_STRATEGY, WIDTH, NUMBER_OF_DRONES_IN_SWARM, DRONE_SYMBOL, NUMBER_OF_HIDER_CANDIDATES,N_HIDERS
 import networkx as nx
 from .helpers import get_optimal_permutation_MD, get_all_stats, get_whole_and_remainder, get_all_stats_binom, \
-    route_interpolator, manhattan_distance, best_route_discount_distance
+    route_interpolator, best_route_discount_distance
 from tqdm import tqdm
 import time
 import pandas as pd
 import os
+import csv
 
 
 @cache
@@ -73,8 +74,20 @@ class Simulation():
 
 
         if self.log:
-            with open(f"{self.log_dir}/{filename}", "a") as f:
-                f.write(f"{i + 1},{steps},{all_found},{taken_down},{frac_area_covered},{mean_distance_travelled},{total_distance_covered},{hider_frac_found}\n")
+            with open(f"{self.log_dir}/{filename}", "a", newline='') as f:
+                writer = csv.writer(f, delimiter='\t')
+                data_row = [
+                    i + 1,
+                    steps,
+                    all_found,
+                    taken_down,
+                    frac_area_covered,
+                    mean_distance_travelled,
+                    total_distance_covered,
+                    hider_frac_found
+                ]
+
+                writer.writerow(data_row)
 
     def start_main_sim_loop_single_tactic_metrics(self, plot_boards=False, plot_interval=0.2, tactic="ttbp"):
 
@@ -84,12 +97,12 @@ class Simulation():
             "rndm": (self.run_random_walk,"random_walk"),
             "hs": (self.horizontal_scan_traversal_swarm,"horizontal_scan_traversal"),
             "phs": (self.partitioned_horizontal_scan_traversal,"partitioned_horizontal_scan_traversal"),
-            "vs": (self.vertical_scan_traversal_swarm,"vertical_scan_traversal"),
             "sp": (self.spiral_traversal_swarm,"spiral_traversal_swarm"),
             "lb": (self.lidbetter_swarm,"lidbetter"),
             "toq": (self.traverse_ordered_qa,"traverse_ordered_qa"),
             "tpq": (self.traverse_weighted_qa,"traverse_p_qa"),
             "dd": (self.discounted_distance,"discounted_distance"),
+            "ddr": (self.discounted_distance_rev,"discounted_distance_reverse"),
         }
 
         if tactic not in tactic_map:
@@ -99,12 +112,18 @@ class Simulation():
 
         filename = f"T-{tactic}-W-{self.width}-HS-{self.hiding_strategy}-D-{self.swarm_size}-C-{self.n_hider_candidates}-H-{self.n_hiders}-RUNS-{self.runs}.csv"
         self.file_name = filename
+
+        fieldnames = [
+            "i", "steps", "all_found", "taken_down",
+            "frac_area_covered", "mean_distance_travelled",
+            "total_distance_covered", "hider_frac_found"
+        ]
         if self.log:
             if os.path.exists(f"{self.log_dir}/{filename}"):
                     os.remove(f"{self.log_dir}/{filename}")
-            with open(f"{self.log_dir}/{filename}", "a") as f:
-                f.write(f"{tactic}\n")
-                f.write(f"i,steps,all_found,taken_down,frac_area_covered,mean_distance_travelled,total_distance_covered,hider_frac_found\n")
+            with open(f"{self.log_dir}/{filename}", "a", newline='') as f:
+                writer = csv.writer(f, delimiter='\t')
+                writer.writerow(fieldnames)
 
         iterator = tqdm(range(self.runs)) if not plot_boards else range(self.runs)
         for i in iterator:
@@ -363,23 +382,6 @@ class Simulation():
 
         return self._run_traversal_loop_individual(swarm, plot_boards, plot_interval)
 
-    def vertical_scan_traversal_swarm(self, plot_boards=True, plot_interval=0.2):
-        swarm = self.swarm
-        if not swarm.same_start:
-            raise Exception(f"together_to_candidates not implemented yet for {swarm.init_strat}")
-
-        route = [swarm.swarm[0].start]
-
-        for y in range(self.board.height):
-            if y % 2:
-                for x in range(self.board.width - 1, -1, -1):
-                    route.append((y, x))
-            else:
-                for x in range(self.board.width):
-                    route.append((y, x))
-
-        return self._run_traversal_loop_swarm(swarm, route, plot_boards, plot_interval, terminate_after_route=True)
-
     def spiral_traversal_swarm(self, plot_boards=True, plot_interval=0.2):
         swarm = self.swarm
         if not swarm.same_start:
@@ -454,6 +456,10 @@ class Simulation():
         )
 
     def traverse_ordered_qa(self, plot_boards=True, plot_interval=0.2):
+        """
+        Order q_a descending, assign the highest subset to drone 1, 2nd highest subset to drone 2, etc. and wrap around.
+        :return:
+        """
         swarm = self.swarm
         graph = self.board.graph
         board = self.board
@@ -497,6 +503,9 @@ class Simulation():
         return self._run_traversal_loop_individual(swarm, plot_boards, plot_interval)
 
     def traverse_weighted_qa(self, plot_boards=True, plot_interval=0.2):
+        """
+        Assign subset A with weight Q_a to a drone, rest of the locations uniform at random, for each drone in the swarm
+        """
         swarm = self.swarm
         graph = self.board.graph
         board = self.board
@@ -536,6 +545,9 @@ class Simulation():
         return self._run_traversal_loop_individual(swarm, plot_boards, plot_interval)
 
     def discounted_distance(self, plot_boards=True, plot_interval=0.2):
+        """
+        Set the 'optimal' permutation of routes based on: sum of distance * 1-p_i over all candidate points
+        """
         swarm = self.swarm
         graph = self.board.graph
         board = self.board
@@ -545,6 +557,23 @@ class Simulation():
         start_cell = graph.nodes[start_loc]['cell']
 
         visit_cells_order = best_route_discount_distance(board.hider_candidates, start_cell)
+        fullroute = route_interpolator(visit_cells_order,start_loc,graph,self.all_paths)
+
+        return self._run_traversal_loop_swarm(swarm, fullroute, plot_boards, plot_interval, terminate_after_route=True)
+
+    def discounted_distance_rev(self, plot_boards=True, plot_interval=0.2):
+        """
+        Set the 'optimal' permutation of routes based on: sum of distance * p_i over all candidate points
+        """
+        swarm = self.swarm
+        graph = self.board.graph
+        board = self.board
+        if not swarm.same_start:
+            raise Exception(f"together_to_candidates not implemented yet for {swarm.init_strat}")
+        start_loc = swarm.available[0].start
+        start_cell = graph.nodes[start_loc]['cell']
+
+        visit_cells_order = best_route_discount_distance(board.hider_candidates, start_cell, rev=True)
         fullroute = route_interpolator(visit_cells_order,start_loc,graph,self.all_paths)
 
         return self._run_traversal_loop_swarm(swarm, fullroute, plot_boards, plot_interval, terminate_after_route=True)

@@ -4,22 +4,7 @@ NX_CUGRAPH_AUTOCONFIG = True
 import timeit
 from src import Simulation
 import argparse
-"""
-#TODO
-    - Nieuwe strategieën implementeren
-    - Plots maken
 
-    "ttbp":"together_traverse_best_permutation",
-    "dor":"divide_over_risks",
-    "rndm":"random_walk",
-    "hs":"horizontal_scan_traversal",
-    "phs":"partitioned_horizontal_scan_traversal",
-    "sp": "spiral_traversal_swarm",
-    "lb": "lidbetter",
-    "toq": "traverse_ordered_qa",
-    "tpq":"traverse_weighted_qa",
-    "dd":"discounted_distance",
-"""
 
 
 def main():
@@ -35,7 +20,7 @@ def main():
 
     swarm_size_to_try = [1,5,10]
 
-    searching_strategy_to_try = ["dd"]
+    searching_strategy_to_try = ["ddr"]
 
     for strategy in searching_strategy_to_try:
         for hiding_strategy in hiding_strategy_to_try:

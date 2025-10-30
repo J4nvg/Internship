@@ -9,7 +9,6 @@ tactic_abbr_full = {
     "rndm":"random_walk",
     "hs":"horizontal_scan_traversal",
     "phs":"partitioned_horizontal_scan_traversal",
-    # "vs":"vertical_scan_traversal",
     "sp": "spiral_traversal_swarm",
     "lb": "lidbetter",
     "toq": "traverse_ordered_qa",

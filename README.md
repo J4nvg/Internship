@@ -6,11 +6,6 @@
 
 ---
 # Todo
-
--[ ] Find_steps == Time, change names
--[ ] more Plots
--[ ] Nieuwe strategieën
--[ ] Update readme.
 ___
 ## Game info
 
@@ -89,7 +84,7 @@ The first game-step or simulation step is the swarm entering the grid on positio
 - Drones in a swarm **cannot move diagonally**;
 - Drones in a swarm **know possible hiding 'candidates'** (cells where the hider might be hidden);
 - Drones in a swarm **are aware of the success probabilities** the hiding candidates have ($p_i$).
-- Drones in a swarm **are not aware of the hiding chances** the hiding candidates have (**q<sub>i</sub>**);
+- Drones in a swarm **Do not have access to the cell's hiding chances** the hiding candidates have (**q<sub>i</sub>**);
 - If a drone enters / expands a hider candidate cell that contains the hider _and_ the drone does not get taken down, then it has certainly found the hider. i.e. 
 $P( \text{Found Hider} |  \text{Hider in cell} \land \text{not taken down}) = 1$  
 - If a drone enters / expands a hider candidate cell that contains the hider _and_ the drone *does* get taken down, then it has not found the hider. 
@@ -113,14 +108,18 @@ main.py --plot --tactic <tactic> --runs <nruns> --log
 
 ## List of available tactics:
 
-| Name                                  | Abbreviation |
-|:--------------------------------------|-------------:|
-| Together Traverse to Best Permutation |     **ttbp** |
-| Divide Over Risks                     |      **dor** |
-| Partitioned Horizontal Scan           |      **phs** |
-| Horizontal Scan                       |       **hs** |
-| Vertical Scan                         |       **vs** |
-| Random                                |     **rndm** |
+| Name                                     | Abbreviation |
+|:-----------------------------------------|-------------:|
+| 1. Together Traverse to Best Permutation |     **ttbp** |
+| 2. Divide Over Risks                     |      **dor** |
+| 3. Partitioned Horizontal Scan           |      **phs** |
+| 4. Horizontal Scan                       |       **hs** |
+| 5. Spiral Scan                           |       **sp** |
+| 6. Random                                |     **rndm** |
+| 7. Lidbetter                             |       **lb** |
+| 8. Traverse ordered $Q_a$                |      **toq** |
+| 9. Traverse weighted $Q_a$               |      **tpq** |
+| 10. Discounted Distance                  |       **dd** |
 
 
 

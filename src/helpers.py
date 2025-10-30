@@ -119,23 +119,27 @@ def route_interpolator(visit_order,start,graph,all_paths):
 
     return route
 
-def discounted_distance(p1,p2,p2p):
+def discounted_distance(p1,p2,p2p,rev):
     d = manhattan_distance(p1,p2)
-    return d * (1-p2p)
+    if rev:
+        r = d * p2p
+    else:
+        r = d * (1 - p2p)
+    return r
 
-def total_discounted_distance(list_of_points):
+def total_discounted_distance(list_of_points,rev):
     tot = 0
     for i in range(len(list_of_points)-1):
-            tot += discounted_distance(list_of_points[i].loc, list_of_points[i+1].loc, list_of_points[i+1].p)
+            tot += discounted_distance(list_of_points[i].loc, list_of_points[i+1].loc, list_of_points[i+1].p,rev)
     return tot
 
-def best_route_discount_distance(hider_candidates,start_location):
+def best_route_discount_distance(hider_candidates,start_location, rev=False):
     permutation_list = permutations(hider_candidates)
     shortest_distance = float("inf")
     optimal_permutation = None
     for perm_of_targets in permutation_list:
         current_path = [start_location] + list(perm_of_targets)
-        tot_dist = total_discounted_distance(current_path)
+        tot_dist = total_discounted_distance(current_path,rev)
         # print(f"dist:{tot_dist}, for {current_path}")
         if tot_dist < shortest_distance:
             shortest_distance = tot_dist
