@@ -53,7 +53,7 @@ for filename in os.listdir(input_folder):
 
     match = pattern.match(filename)
     if not match:
-        print(f"⚠️ Skipping unrecognized filename format: {filename}")
+        print(f"Skipping unrecognized filename format: {filename}")
         continue
 
     filepath = os.path.join(input_folder, filename)
