@@ -3,6 +3,7 @@ import numpy as np
 from game_config import SUCCES_PROBABILITIES
 from scipy.stats import binomtest
 import networkx as nx
+
 type point = tuple[int,int]
 
 def manhattan_distance( p1:point, p2:point ) -> int:
@@ -30,9 +31,9 @@ def get_optimal_permutation_MD(start_point:point, target_points: list[point] ) -
             # print(f"optimal_permutation:{optimal_permutation}")
     return optimal_permutation, shortest_distance
 
-def confidence_interval(mean, var, Nruns):
+def confidence_interval(mean: float | int, var: float | int, nruns: int) -> tuple[float, float] :
     zalpha2 = 1.96
-    half_width = zalpha2 * np.sqrt(var)/np.sqrt(Nruns)
+    half_width = zalpha2 * np.sqrt(var)/np.sqrt(nruns)
     ci = (mean - half_width, mean + half_width)
     return ci
 
