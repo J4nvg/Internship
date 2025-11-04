@@ -45,7 +45,8 @@ def main():
                 for n_hiders in n_hiders_to_try:
                     for swarm_size in swarm_size_to_try:
                         filename = f"T-{tactic_abbr_full[strategy]}-W-{20}-HS-{hiding_strategy}-D-{swarm_size}-C-{n_hider_candidates}-H-{n_hiders}-RUNS-{runs}.csv"
-                        if os.path.exists(f"./data/sim_results/{filename}"):
+                        # if os.path.exists(f"./data/sim_results/{filename}"):
+                        if False:
                             print(f"skip {filename}")
                             # continue
                         else:

@@ -25,7 +25,7 @@ import os
 
 
 def main():
-    runs = 10
+    runs = 100_000
 
     print(f"Starting simulation with {runs} runs...")
 
@@ -36,7 +36,7 @@ def main():
 
     n_hider_candidates_to_try = [5]
 
-    swarm_size_to_try = [10]
+    swarm_size_to_try = [1,5,10]
 
     searching_strategy_to_try = ["tpq"]
 
@@ -47,11 +47,12 @@ def main():
                     for swarm_size in swarm_size_to_try:
                         filename = f"T-{tactic_abbr_full[strategy]}-W-{20}-HS-{hiding_strategy}-D-{swarm_size}-C-{n_hider_candidates}-H-{n_hiders}-RUNS-{runs}.csv"
                         # if os.path.exists(f"./data/sim_results/{filename}"):
-                        #     print(f"skip {filename}")
+                        if False:
+                            print(f"skip {filename}")
                             # continue
-                        # else:
-                        sim = Simulation(n_runs=runs, log=False, width=WIDTH,n_hiders=n_hiders,n_hider_candidates=n_hider_candidates,swarm_size=swarm_size,hiding_strategy=hiding_strategy)
-                        sim.start_main_sim_loop_single_tactic_metrics(plot_boards=True, tactic=strategy)
+                        else:
+                            sim = Simulation(n_runs=runs, log=True, width=WIDTH,n_hiders=n_hiders,n_hider_candidates=n_hider_candidates,swarm_size=swarm_size,hiding_strategy=hiding_strategy)
+                            sim.start_main_sim_loop_single_tactic_metrics(plot_boards=False, tactic=strategy)
 
 
 if __name__ == "__main__":
