@@ -5,7 +5,7 @@ import numpy as np
 import sys
 from game_config import HIDING_STRATEGY, WIDTH, NUMBER_OF_DRONES_IN_SWARM, DRONE_SYMBOL, NUMBER_OF_HIDER_CANDIDATES,N_HIDERS
 import networkx as nx
-from .helpers import get_optimal_permutation_MD, get_all_stats, get_whole_and_remainder, get_all_stats_binom, \
+from .helpers import get_optimal_permutation_md, get_all_stats, get_whole_and_remainder, get_all_stats_binom, \
     route_interpolator, best_route_discount_distance
 from tqdm import tqdm
 import time
@@ -226,7 +226,7 @@ class Simulation():
 
         hider_candidate_locations = [cell.loc for cell in board.hider_candidates]
 
-        optimal_path_sequence, shortest_total_distance = get_optimal_permutation_MD(sample_drone.start,
+        optimal_path_sequence, shortest_total_distance = get_optimal_permutation_md(sample_drone.start,
                                                                                     hider_candidate_locations)
         route = route_interpolator(optimal_path_sequence,sample_drone.start,graph,self.all_paths)
 

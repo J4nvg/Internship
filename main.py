@@ -4,30 +4,8 @@ from src import Simulation
 import argparse
 from src.constants import tactic_abbr_full
 
-
 """
 #TODO
-    - Nieuwe strategieën implementeren
-    - Plots maken
-
-valid tactics:
-
-["ttbp","rndm","hs","dor","phs","sp"]
-
-Swarm together:
-
-"ttbp" - Together Traverse Best Permutation
-"rndm" - Random walk 
-"hs" - Horizontal scan
-"sp" - Spiral
-
-
-
-Swarm split:
-"dor" - Divide over Risk
-"phs" - Partitioned Horizontal scan
-
-
 """
 
 

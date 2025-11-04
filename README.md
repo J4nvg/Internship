@@ -6,6 +6,7 @@
 
 ---
 # Todo
+[ ] Refactor code with typing
 ___
 ## Game info
 
