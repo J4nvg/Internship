@@ -29,8 +29,8 @@ def main():
 
     print(f"Starting simulation with {runs} runs...")
 
-    # hiding_strategy_to_try = ["greedy","weighted","random"]
-    hiding_strategy_to_try = ["random"]
+    hiding_strategy_to_try = ["greedy","weighted","random"]
+    # hiding_strategy_to_try = ["random"]
 
     n_hiders_to_try = [1,2,3,4,5]
 
