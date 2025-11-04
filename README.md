@@ -13,7 +13,7 @@ ___
 ### Hider
 
 The game features **n** static hiders, which can be placed in one of
-**m<sub>hider_candidate</sub>** locations, denoted as the set **S**.
+**m<sub>hider_candidate</sub> == |S| ** locations, denoted as the set **S**.
 Both the number of hiders and the number of candidate locations are configurable in the `game_config` file.
 
 > **Note:** Setting more than 10 hider candidates significantly impacts simulation speed for the **TTBP** tactic, due to the combinatorial explosion in possible hiding permutations.
@@ -29,8 +29,8 @@ At initialization, candidate cells are randomly selected from the grid and assig
 The probabilities **q<sub>A</sub>** are derived following Lidbetter (2020) [^1], which provides the optimal hiding strategy for this class of Search and Rescue games.
 
 **Weighted**
-: The hider(s) select a subset of candidate cells according to the probability distribution over **S**, defined by **q<sub>i</sub>**.
-As in the Greedy strategy, **q<sub>i</sub>** is based on Lidbetter (2020) [^1].
+: The hider(s) select a subset of candidate cells according to the probability distribution over **S**, defined by **q<sub>A/sub>**.
+As in the Greedy strategy, **q<sub>A</sub>** is based on Lidbetter (2020) [^1].
 
 **Random**
 : The hider(s) select one or more candidate cells **i ∈ S**, where probabilities **q<sub>i</sub>** are drawn from a Dirichlet distribution, ensuring

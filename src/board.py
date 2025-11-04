@@ -324,43 +324,6 @@ class Board():
             print(f'‖  {row_str}  ‖')
         print(f" {horizontal_line}")
 
-    def plot_graph(self):
-
-        pos = {(y, x): (x, -y) for y, x in self.graph.nodes()}
-        node_colors = {}
-        node_labels = {}
-        for node in self.graph.nodes():
-            cell = self.graph.nodes[node]['cell']
-            if cell.p > 0:
-                node_colors[node] = 'red'  # Risk nodes are red
-                node_labels[node] = f"R\np={cell.p:.1f}"
-            elif len(cell.drone_container) > 0:
-                node_colors[node] = 'skyblue'  # Drones/hiders are blue
-                node_labels[node] = str(len(cell.drone_container))
-            else:
-                node_colors[node] = 'lightgray'  # Empty cells are gray
-                node_labels[node] = f"q={cell.q:.2f}"
-
-        plt.figure(figsize=(12, 12))
-        plt.title("Board as a Graph")
-
-
-        nx.draw(self.graph,
-                pos=pos,
-                with_labels=False,
-                node_size=1500,
-                node_color=list(node_colors.values()),
-                edge_color='gray')
-
-        nx.draw_networkx_labels(self.graph,
-                                pos,
-                                labels=node_labels,
-                                font_size=8,
-                                font_color='black')
-
-        plt.show()
-        plt.close()
-
     def plot_drone_trajectory_animated(self, swarm,id=1):
         fig, ax = plt.subplots()
         ax.set_title('Drone Path')

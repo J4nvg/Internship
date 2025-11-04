@@ -1,4 +1,3 @@
 .idea/
-__pycache__/
-# data/sim_logs/
+__pycache__/git
 .env

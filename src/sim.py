@@ -429,6 +429,9 @@ class Simulation():
         )
 
     def lidbetter_swarm(self, plot_boards=True, plot_interval=0.2):
+        """
+        A subset of possible hiding locations is chosen by the q_a formula, the rest of the cells are explored uniformly at random.
+        """
         swarm = self.swarm
         if not swarm.same_start:
             raise Exception(f"together_to_candidates not implemented yet for {swarm.init_strat}")

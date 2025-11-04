@@ -3,20 +3,21 @@ import numpy as np
 from game_config import SUCCES_PROBABILITIES
 from scipy.stats import binomtest
 import networkx as nx
+type point = tuple[int,int]
 
-def manhattan_distance(p1, p2):
+def manhattan_distance( p1:point, p2:point ) -> int:
     x1, y1 = p1
     x2, y2 = p2
     return abs(x1 - x2) + abs(y1 - y2)
 
-def total_manhattan_distance_list(list_of_points):
-    tot = 0
+def total_manhattan_distance_list( list_of_points:list[point] ) -> int:
+    tot:int = 0
     for i in range(len(list_of_points)-1):
         tot += manhattan_distance(list_of_points[i], list_of_points[i+1])
     return tot
 
-def get_optimal_permutation_MD(start_point, target_points):
-    shortest_distance = float("inf")
+def get_optimal_permutation_MD(start_point:point, target_points: list[point] ) -> tuple[list[point] , int] :
+    shortest_distance:float = float("inf")
     optimal_permutation = None
 
     for perm_of_targets in permutations(target_points):
