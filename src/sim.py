@@ -270,7 +270,7 @@ class Simulation():
         for i in range(remainder):
             drone_assignments[indices_for_remainder[i]] += 1
 
-        drone_pool = list(swarm.available)
+        drone_pool = list(swarm.swarm)
 
         current_drone_idx = 0
 
@@ -488,7 +488,7 @@ class Simulation():
 
         # assigns route drone 1 to q_a_subset[0], [1], [2], ..., q_a_subset[n]
         # assigns route drone 2 to q_a_subset[1], [2], [n], ..., q_a_subset[0] etc.
-        for i, drone in enumerate(swarm.available):
+        for i, drone in enumerate(swarm.swarm):
             visit_cells_order = [start]
             start_index = i % num_subsets  # i.e. wraps around
             for j in range(num_subsets):
@@ -524,10 +524,10 @@ class Simulation():
         # print([[cell.loc for cell in subset] for subset in q_a_subset])
         # print("\n")
 
-        start = swarm.available[0].start
+        start = swarm.swarm[0].start
         # selecting and adding a weighted-random subset, and then adding all remaining candidate cells in a shuffled (uniform random) order.
         # i.e. lidbetter but independent per drone
-        for drone in swarm.available:
+        for drone in swarm.swarm:
             visit_cells_order = [start]
 
             chosen_subset = rng.choice(q_a_subset, p=q_a_values)
@@ -543,6 +543,7 @@ class Simulation():
             # print(f"allocating {drone} to visit order {visit_cells_order}")
             drone.set_route(fullroute)
             swarm.to_unavailable(drone)
+            # print(f"{drone} assigned to {chosen_subset}")
         # if plot_boards:
         #     time.sleep(2)
         return self._run_traversal_loop_individual(swarm, plot_boards, plot_interval)
