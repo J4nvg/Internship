@@ -121,7 +121,8 @@ main.py --plot --tactic <tactic> --runs <nruns> --log
 | 8. Traverse ordered $Q_a$                |      **toq** |
 | 9. Traverse weighted $Q_a$               |      **tpq** |
 | 10. Discounted Distance                  |       **dd** |
-
+| 10. Discounted Distance reverse          |      **ddr** |
+| 10. Shared list                          |       **sl** |
 
 
 ### Recommended use:
