@@ -186,6 +186,9 @@ def route_interpolator(visit_order: list[point], start: point, graph: nx.Graph, 
 
     return route
 
+def route_interpolator_avoid_nodes(visit_order: list[point], start: point,to_avoid:list[point], graph: nx.Graph, all_paths) -> list[point]:
+
+    pass
 
 def discounted_distance(p1: point, p2: point, p2p: int, rev: bool) -> Numeric:
     """

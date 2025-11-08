@@ -12,6 +12,7 @@ import time
 import pandas as pd
 import os
 import csv
+from collections import deque
 
 
 @cache
@@ -52,8 +53,9 @@ class Simulation():
         self.res_dir = "./data/sim_results/"
 
         self.all_paths = None
-        if self.runs > 10:
+        if self.runs:
             self.all_paths = get_all_paths(width, width)
+            print(self.all_paths)
 
     def save_data(self, i, steps, all_found, taken_down, unique_cells_covered, mean_distance_travelled, total_distance_covered,hider_frac_found, filename=''):
         self.steps[i] = steps
@@ -103,6 +105,7 @@ class Simulation():
             "tpq": (self.traverse_weighted_qa,"traverse_p_qa"),
             "dd": (self.discounted_distance,"discounted_distance"),
             "ddr": (self.discounted_distance_rev,"discounted_distance_reverse"),
+            "slio": (self.shared_list_init_order,"shared_list_init_order"),
         }
 
         if tactic not in tactic_map:
@@ -191,7 +194,7 @@ class Simulation():
         all_found = False
         steps = 1
         for drone in swarm.swarm:
-            if drone.move_next(swarm.swarm[0].start):
+            if drone.move_next(swarm.swarm[0].start)[0]:
                 n_found += 1
                 all_found = True if n_found == n_hiders else False
         max_steps = self.board.width**2 * 10 # = 4000 for 20x20, while results stabilize after 2k
@@ -222,7 +225,7 @@ class Simulation():
         if len(board.hider_candidates) == 0:
             return
 
-        sample_drone = swarm.available[0]
+        sample_drone = swarm.swarm[0]
 
         hider_candidate_locations = [cell.loc for cell in board.hider_candidates]
 
@@ -284,7 +287,6 @@ class Simulation():
 
             c = 1
             for drone in drones_for_this_target:
-                swarm.to_unavailable(drone)
 
                 if plot_boards:
                     print(f"allocating {drone} to {target_loc}, {c}/{num_to_assign}, {ordered_risk_p[i]}")
@@ -297,7 +299,7 @@ class Simulation():
             time.sleep(2)
         return self._run_traversal_loop_individual(swarm, plot_boards, plot_interval)
 
-    def horizontal_scan_traversal_swarm(self, plot_boards=True, plot_interval=0.2):
+    def horizontal_scan_traversal_swarm(self, plot_boards=True, plot_interval=0.1):
         swarm = self.swarm
         if not swarm.same_start:
             raise Exception(f"together_to_candidates not implemented yet for {swarm.init_strat}")
@@ -378,11 +380,10 @@ class Simulation():
 
                 final_route = start_path + full_route[start_path_index:]
                 drone.set_route(final_route)
-                swarm.to_unavailable(drone)
 
         return self._run_traversal_loop_individual(swarm, plot_boards, plot_interval)
 
-    def spiral_traversal_swarm(self, plot_boards=True, plot_interval=0.2):
+    def spiral_traversal_swarm(self, plot_boards=True, plot_interval=0.1):
         swarm = self.swarm
         if not swarm.same_start:
             raise Exception(f"together_to_candidates not implemented yet for {swarm.init_strat}")
@@ -477,7 +478,7 @@ class Simulation():
         # q_a_values = list(q_a_values_sorted)
         q_a_subset = list(q_a_subset_sorted)
 
-        start = swarm.available[0].start
+        start = swarm.swarm[0].start
         num_subsets = len(q_a_subset)
 
         # print("Q_A_VALUES")
@@ -500,7 +501,6 @@ class Simulation():
             fullroute = route_interpolator(visit_cells_order,start,graph,self.all_paths)
             # print(f"allocating {drone} to visit order {visit_cells_order}")
             drone.set_route(fullroute)
-            swarm.to_unavailable(drone)
         # if plot_boards:
         #     time.sleep(2)
         return self._run_traversal_loop_individual(swarm, plot_boards, plot_interval)
@@ -540,12 +540,9 @@ class Simulation():
             visit_cells_order.extend([cell.loc for cell in remaining_cells_list])
 
             fullroute = route_interpolator(visit_cells_order, start, graph, self.all_paths)
-            # print(f"allocating {drone} to visit order {visit_cells_order}")
+
             drone.set_route(fullroute)
-            swarm.to_unavailable(drone)
-            # print(f"{drone} assigned to {chosen_subset}")
-        # if plot_boards:
-        #     time.sleep(2)
+
         return self._run_traversal_loop_individual(swarm, plot_boards, plot_interval)
 
     def discounted_distance(self, plot_boards=True, plot_interval=0.2):
@@ -557,7 +554,7 @@ class Simulation():
         board = self.board
         if not swarm.same_start:
             raise Exception(f"together_to_candidates not implemented yet for {swarm.init_strat}")
-        start_loc = swarm.available[0].start
+        start_loc = swarm.swarm[0].start
         start_cell = graph.nodes[start_loc]['cell']
 
         visit_cells_order = best_route_discount_distance(board.hider_candidates, start_cell)
@@ -574,13 +571,41 @@ class Simulation():
         board = self.board
         if not swarm.same_start:
             raise Exception(f"together_to_candidates not implemented yet for {swarm.init_strat}")
-        start_loc = swarm.available[0].start
+        start_loc = swarm.swarm[0].start
         start_cell = graph.nodes[start_loc]['cell']
 
         visit_cells_order = best_route_discount_distance(board.hider_candidates, start_cell, rev=True)
         fullroute = route_interpolator(visit_cells_order,start_loc,graph,self.all_paths)
 
         return self._run_traversal_loop_swarm(swarm, fullroute, plot_boards, plot_interval, terminate_after_route=True)
+
+    def shared_list_init_order(self, plot_boards=True, plot_interval=0.2):
+        """
+        Drones in swarm have a shared goal list
+        """
+        swarm = self.swarm
+        graph = self.board.graph
+        board = self.board
+
+        cells_to_visit_list = [hider.loc for hider in board.hider_candidates]
+        cells_to_visit_deque = deque(cells_to_visit_list)
+
+        mapping = {
+            "to_visit" : deque(cells_to_visit_deque)
+        }
+
+        for drone in swarm.swarm:
+            #Initialize the first n_hider_candidate drones with a goal
+            if not mapping["to_visit"]:
+                break
+
+            first_goal = mapping["to_visit"].popleft()
+            mapping[drone] = first_goal
+
+            route = route_interpolator([first_goal], drone.start, graph, self.all_paths)
+            drone.set_route(route)
+
+        return self._run_traversal_loop_individual_shared_list(swarm,mapping,plot_boards, plot_interval)
 
 
     def _run_traversal_loop_swarm(self, swarm, route, plot_boards=False, plot_interval=0.2, terminate_after_route=False):
@@ -592,16 +617,14 @@ class Simulation():
 
         for drone in swarm.swarm:
             drone.set_route(route)
-            swarm.to_unavailable(drone)
 
         while not all_found and not len(swarm.takenDown) == swarm.size:
             for drone in swarm.swarm:
-                if drone.move_next_from_route():
+                if drone.move_next_from_route()[0]:
                     n_found += 1
                     all_found = True if n_found == n_hiders else False
-                    # print(f"\nTarget found by Drone {drone.number} at location {drone.current_loc}!")
             if plot_boards:
-                sys.stdout.write("\033[H\033[J")
+                sys.stdout.write("\033[H\033[J") # Clear screen
                 self.board.print_board()
                 sys.stdout.flush()
                 time.sleep(plot_interval)
@@ -610,13 +633,7 @@ class Simulation():
                 break
             steps += 1
             if steps == len_route and terminate_after_route:
-                # print("Nothing was found")
                 break
-
-        # print(f"Took {r} steps and target was", "found" if found else "not found",
-        #       f"{len(swarm.takenDown)} drones were taken down.")
-
-        # self.board.plot_drone_trajectory_animated(swarm=swarm,id=1)
         swarm.remove_swarm()
         return steps, all_found, len(swarm.takenDown),n_found/n_hiders
 
@@ -626,13 +643,11 @@ class Simulation():
         all_found = False
         steps = 1
 
-        while not all_found and (
-                not len(swarm.takenDown) == swarm.size and not len(swarm.done) + len(swarm.takenDown) == swarm.size):
+        while not all_found and (not len(swarm.takenDown) == swarm.size and not len(swarm.done) + len(swarm.takenDown) == swarm.size):
             for drone in swarm.swarm:
-                if drone.move_next_from_route():
+                if drone.move_next_from_route()[0]:
                     n_found += 1
                     all_found = True if n_found == n_hiders else False
-                    # print(f"\nTarget found by Drone {drone.number} at location {drone.current_loc}!")
             if plot_boards:
                 sys.stdout.write("\033[H\033[J")
                 self.board.print_board()
@@ -642,11 +657,94 @@ class Simulation():
             if all_found:
                 break
             steps += 1
+        swarm.remove_swarm()
+        return steps, all_found, len(swarm.takenDown),n_found/n_hiders
 
-        # print(f"Took {r} steps and target was", "found" if found else "not found",
-        #       f"{len(swarm.takenDown)} drones were taken down.")
+    def _run_traversal_loop_individual_shared_list(self, swarm, mapping, plot_boards=False, plot_interval=0.2):
 
-        # self.board.plot_drone_trajectory_animated(swarm=swarm,id=1)
-        # self.board.plot_risk_heatmap()
+        n_found = 0
+        n_hiders = self.board.n_hiders
+        all_found = False
+        steps = 1
+
+        graph = self.board.graph
+        to_visit = mapping["to_visit"]  # shared deque
+
+        idle = set({})
+        active = set({})
+        swarm_set = set(swarm.swarm)
+        for drone in swarm.swarm:
+            if not drone in mapping:
+                idle.add(drone)
+        active = swarm_set - idle
+
+        while not all_found and len(swarm.takenDown) < swarm.size:
+            available = list(idle) # perhaps this can be improved
+            # print(f"idle: {idle}")
+            # print(f"active: {active}")
+            # print(f"taken_down: {swarm.takenDown}")
+            # print(f"complete swarm: {swarm.swarm}")
+            # print(f"mapping: {mapping}")
+            for i in range(len(available) - 1, -1, -1): # Edit the assignment part such that the closest drone is sent
+                d = available[i]
+                if to_visit:
+                    goal = to_visit.popleft()
+                    mapping[d] = goal
+
+                    # Edit this such that the seen hider candidates can be avoided (if possible)
+                    # route_interpolator_avoid_x
+                    route = route_interpolator([goal], d.current_loc,
+                                               graph, self.all_paths)
+                    d.set_route(route)
+#                     print(f"Assigning: {d} to {goal}")
+                    idle.remove(d)
+                    active.add(d)
+
+
+            for drone in list(swarm.swarm):
+                # Leave 'dead' drones
+                if not drone.alive:
+                    continue
+
+                found, is_down = drone.move_next_from_route()
+
+                #Drone got taken down
+                if is_down:
+#                     print(f"drone in {drone.current_loc} is now down")
+                    failed_goal = mapping.pop(drone, None)
+#                     print(f"adding {failed_goal} back to mapping")
+
+                    active.remove(drone)
+                    if failed_goal is not None:
+                        to_visit.append(failed_goal)  # retry goal
+
+                    continue
+
+                # Found a hider
+                if found:
+                    n_found += 1
+                    all_found = n_found == n_hiders
+
+                # End of route
+                if drone.route_length == 0:
+#                     print(f"{[drone]} ended route in {drone.current_loc}")
+                    mapping.pop(drone, None)
+                    if drone in active:
+                        active.remove(drone)
+                        idle.add(drone)
+                    if drone in swarm.temp_unavailable:
+                        swarm.to_available(drone)
+
+            if plot_boards:
+                sys.stdout.write("\033[H\033[J")
+                self.board.print_board()
+                sys.stdout.flush()
+                time.sleep(plot_interval)
+
+            if all_found:
+                break
+
+            steps += 1
+
         swarm.remove_swarm()
         return steps, all_found, len(swarm.takenDown),n_found/n_hiders

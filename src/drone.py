@@ -1,7 +1,5 @@
 import numpy as np
-import networkx as nx
 from collections import deque
-import sys, time
 import random
 from .helpers import manhattan_distance
 
@@ -13,9 +11,10 @@ class Swarm():
         self.swarm = []
 
         self.done = set({})
-        self.available = []
+        self.available = set({})
+        self.temp_unavailable = set({})
         self.takenDown = []
-        self.temp_unavailable = []
+
 
         self.symbol = symbol
 
@@ -59,18 +58,17 @@ class Swarm():
             drone.reset()
             self.board.add_drone_to_board(drone, drone.start)
 
-        self.available = [drone for drone in self.swarm]
-
+        self.available = set([drone for drone in self.swarm])
 
 
     def to_unavailable(self,drone):
         self.available.remove(drone)
-        self.temp_unavailable.append(drone)
+        self.temp_unavailable.add(drone)
         return
 
     def to_available(self,drone):
         self.temp_unavailable.remove(drone)
-        self.available.append(drone)
+        self.available.add(drone)
         return
 
     def drone_takedown(self,drone):
@@ -88,8 +86,7 @@ class Swarm():
 
 class Drone():
     def __init__(self,board,goal,symbol,parent_swarm, num=0):
-        # self.max_x = board.width
-        # self.max_y = board.height
+
         self.parent_swarm = parent_swarm
 
         self.goal = goal
@@ -100,10 +97,12 @@ class Drone():
 
         self.start = ()
         self.current_loc = ()
+        self.done = False
 
         self.route = deque([])
         self.route_history = []
 
+        self.available = True
         self.alive = True
         self.route_length = -1
         self.number = num
@@ -117,11 +116,27 @@ class Drone():
         self.alive = True
         self.route_length = -1
 
+        self.available = True
+
+    def set_done(self):
+        self.parent_swarm.done.add(self)
+        return
+
+    def remove_done(self):
+        self.parent_swarm.done.remove(self)
+        return
 
     def move_next(self,to_x_y):
+        """
+        :param to_x_y:
+        :return: Tuple[Bool,Bool], If the hider was found and If the drone is down
+        """
         if not self.alive:
-            return False
+            is_down = True
+            found = False
+            return found,is_down
 
+        is_down = False
         graph = self.board.graph
         nodes = graph.nodes
 
@@ -144,7 +159,9 @@ class Drone():
             self.alive = False
             self.parent_swarm.drone_takedown(self)
             # print(f"{self} was taken down when going to {to_x_y}")
-            return False
+            is_down = True
+            found = False
+            return found,is_down
 
 
         next_cell.add_drone(self)
@@ -154,30 +171,28 @@ class Drone():
         if target_found:
             next_cell.after_cell_found()
 
-        return target_found
+        return target_found,is_down
 
     def move_next_from_route(self):
+        """
+        :return: Tuple[bool,bool], If the hider was found and If the drone is down
+        """
         if not self.alive:
-            return False
+            return False,True
 
         if self.route_length <1:
-            self.parent_swarm.done.add(self)
-            return False
+            self.set_done()
+            return False, False
 
-        if self.route_length == 1:
-            to_x_y = self.route.popleft()
-            self.route_length -= 1
+        last_step = (self.route_length == 1)
+        to_x_y = self.route.popleft()
+        self.route_length -= 1
+        found = self.move_next(to_x_y)
 
-            found= self.move_next(to_x_y)
-
+        if last_step:
             self.parent_swarm.to_available(self)
-            # print(f"Drone {self.number} has become available again")
-            return found
-        else:
-            to_x_y = self.route.popleft()
-            self.route_length -= 1
-            found= self.move_next(to_x_y)
-            return found
+            self.available = True
+        return found
 
     def set_init_location(self,loc):
         self.current_loc = loc
@@ -186,35 +201,21 @@ class Drone():
         self.board.add_drone_to_board(self, s=loc)
         return
 
-    def get_route_to_goal(self,goal):
-        graph = self.board.graph
-        source_node = self.current_loc
-        self.goal = goal
-        target_node = goal
-        # print(f"Drone at {self.current_loc} finding path from graph node {source_node} to {target_node}")
-        path = nx.shortest_path(graph, source=source_node, target=target_node)
-        # print("Found path:", path)
-        return deque(path)
-
     def set_route(self,path,route_length=-1):
         if route_length == -1:
             route_length = len(path)
         self.route = deque(path)
         self.route_length = route_length
+
+        self.parent_swarm.to_unavailable(self)
+        self.available = False
+
         return
 
     def random_move(self,board):
         neighbors = board.get_neighbors(self.current_loc)
-        # graph = self.board.graph
-        # current_node = self.current_loc
-
-        # possible_moves = list(graph.neighbors(current_node))
-
-        # random_index = np.random.randint(0, len(possible_moves))
-        # random_move = possible_moves[random_index]
         next_node = random.choice(neighbors)
         return self.move_next(next_node)
-
 
 
 
@@ -222,7 +223,7 @@ class Drone():
         return f'\x1b[1;32;40m{self.symbol}\x1b[0m'
 
     def __repr__(self):
-        return f'{self.symbol} {self.current_loc}'
+        return f'{self.symbol}{self.number} {self.current_loc}'
 
     # def greedy_move(self,graph,target_node):
 

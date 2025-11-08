@@ -10,5 +10,6 @@ tactic_abbr_full = {
     "tpq":"traverse_weighted_qa",
     "dd":"discounted_distance",
     "ddr":"discounted_distance_reverse",
+    "slio":"shared_list_init_order",
 }
 

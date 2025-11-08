@@ -21,11 +21,11 @@ tactic_abbr_full = {
 }
 
 # ====================
-# CONFIGURATION
+# CONFIG
 # ====================
 HIDING_STRATEGIES = ['greedy', 'random', 'weighted']  # List of hiding strategies to plot
 SWARM_SIZES = [1,5, 10]  # List of swarm sizes to plot
-N_HIDERS_LIST = [1]  # List of number of hiders to plot
+N_HIDERS_LIST = [2]  # List of number of hiders to plot
 PLOT_DIR = os.path.join("..", "plots", f"H{N_HIDERS_LIST[0]}")
 os.makedirs(PLOT_DIR, exist_ok=True)
 

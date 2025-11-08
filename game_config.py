@@ -18,7 +18,7 @@ DRONE_SYMBOL = 'X'
 ### Hider Settings ###
 NUMBER_OF_HIDER_CANDIDATES = 5
 N_HIDERS = 2
-HIDING_STRATEGY = 'weighted' # random | greedy | weighted  | int | list of ints
+HIDING_STRATEGY = 'greedy' # random | greedy | weighted  | int | list of ints
 
 ### Drone settings ###
 NUMBER_OF_DRONES_IN_SWARM = 10

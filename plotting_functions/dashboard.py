@@ -19,6 +19,7 @@ tactic_abbr_full = {
     "toq": "traverse_ordered_qa",
     "tpq": "traverse_p_qa",
     "dd": "discounted_distance",
+    "ddr": "discounted_distance_reverse",
 }
 
 SUMMARY_FILENAME = '../data/dataset/sim_results_dataset.csv'
