@@ -21,7 +21,7 @@ N_HIDERS = 2
 HIDING_STRATEGY = 'greedy' # random | greedy | weighted  | int | list of ints
 
 ### Drone settings ###
-NUMBER_OF_DRONES_IN_SWARM = 10
+NUMBER_OF_DRONES_IN_SWARM = 1
 
 
 
