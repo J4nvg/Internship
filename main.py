@@ -46,7 +46,7 @@ def main():
     parser.add_argument('--runs',type=int,default=1,help='Number of simulation runs.')
     parser.add_argument( '--log', action='store_true',help='Enable logging to CSV.', default=False)
     parser.add_argument( '--plotspeed',default=.2, type=float,help='increase or decrease plotting speed, 0 < speed < 1')
-    parser.add_argument( '--health',default=.01, action='store_true',help='check for simulation health, maybe errors got introduced')
+    parser.add_argument( '--health',default=False, type=bool,help='check for simulation health, maybe errors got introduced')
     args = parser.parse_args()
 
     if args.health:

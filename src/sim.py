@@ -6,7 +6,7 @@ import sys
 from game_config import HIDING_STRATEGY, WIDTH, NUMBER_OF_DRONES_IN_SWARM, DRONE_SYMBOL, NUMBER_OF_HIDER_CANDIDATES,N_HIDERS
 import networkx as nx
 from .helpers import get_optimal_permutation_md, get_all_stats, get_whole_and_remainder, get_all_stats_binom, \
-    route_interpolator, best_route_discount_distance
+    route_interpolator, best_route_discount_distance, route_interpolator_avoid_nodes, manhattan_distance
 from tqdm import tqdm
 import time
 import pandas as pd
@@ -53,9 +53,9 @@ class Simulation():
         self.res_dir = "./data/sim_results/"
 
         self.all_paths = None
-        if self.runs:
+        if self.runs > 10:
             self.all_paths = get_all_paths(width, width)
-            print(self.all_paths)
+
 
     def save_data(self, i, steps, all_found, taken_down, unique_cells_covered, mean_distance_travelled, total_distance_covered,hider_frac_found, filename=''):
         self.steps[i] = steps
@@ -72,8 +72,6 @@ class Simulation():
         self.total_distance_covered[i] = total_distance_covered
 
         self.hider_frac_found[i] = hider_frac_found
-
-
 
         if self.log:
             with open(f"{self.log_dir}/{filename}", "a", newline='') as f:
@@ -105,7 +103,7 @@ class Simulation():
             "tpq": (self.traverse_weighted_qa,"traverse_p_qa"),
             "dd": (self.discounted_distance,"discounted_distance"),
             "ddr": (self.discounted_distance_rev,"discounted_distance_reverse"),
-            "slio": (self.shared_list_init_order,"shared_list_init_order"),
+            "sl": (self.shared_list,"shared_list"),
         }
 
         if tactic not in tactic_map:
@@ -579,9 +577,9 @@ class Simulation():
 
         return self._run_traversal_loop_swarm(swarm, fullroute, plot_boards, plot_interval, terminate_after_route=True)
 
-    def shared_list_init_order(self, plot_boards=True, plot_interval=0.2):
+    def shared_list(self, plot_boards=True, plot_interval=0.2):
         """
-        Drones in swarm have a shared goal list
+        Drones in swarm have a shared goal list and can communicate what has been explored and when one dies
         """
         swarm = self.swarm
         graph = self.board.graph
@@ -606,7 +604,6 @@ class Simulation():
             drone.set_route(route)
 
         return self._run_traversal_loop_individual_shared_list(swarm,mapping,plot_boards, plot_interval)
-
 
     def _run_traversal_loop_swarm(self, swarm, route, plot_boards=False, plot_interval=0.2, terminate_after_route=False):
         n_found = 0
@@ -669,7 +666,7 @@ class Simulation():
 
         graph = self.board.graph
         to_visit = mapping["to_visit"]  # shared deque
-
+        visited_candidates = set({})
         idle = set({})
         active = set({})
         swarm_set = set(swarm.swarm)
@@ -685,20 +682,31 @@ class Simulation():
             # print(f"taken_down: {swarm.takenDown}")
             # print(f"complete swarm: {swarm.swarm}")
             # print(f"mapping: {mapping}")
-            for i in range(len(available) - 1, -1, -1): # Edit the assignment part such that the closest drone is sent
-                d = available[i]
-                if to_visit:
-                    goal = to_visit.popleft()
-                    mapping[d] = goal
 
-                    # Edit this such that the seen hider candidates can be avoided (if possible)
-                    # route_interpolator_avoid_x
-                    route = route_interpolator([goal], d.current_loc,
-                                               graph, self.all_paths)
-                    d.set_route(route)
-#                     print(f"Assigning: {d} to {goal}")
-                    idle.remove(d)
-                    active.add(d)
+            for loc in list(to_visit):
+                if not available:
+                    break
+
+                closest = None
+                dist = float('inf')
+
+                for d in available:
+                    distance = manhattan_distance(loc,d.current_loc)
+                    if distance < dist:
+                        closest = d
+                        dist = distance
+
+
+                goal = loc
+                mapping[closest] = goal
+
+                route = route_interpolator_avoid_nodes([goal], closest.current_loc, visited_candidates,
+                                                       graph, self.all_paths)
+                closest.set_route(route)
+                idle.remove(closest)
+                active.add(closest)
+                available.remove(closest)
+                to_visit.remove(loc)
 
 
             for drone in list(swarm.swarm):
@@ -728,7 +736,8 @@ class Simulation():
                 # End of route
                 if drone.route_length == 0:
 #                     print(f"{[drone]} ended route in {drone.current_loc}")
-                    mapping.pop(drone, None)
+                    finished_goal = mapping.pop(drone, None)
+                    visited_candidates.add(finished_goal)
                     if drone in active:
                         active.remove(drone)
                         idle.add(drone)

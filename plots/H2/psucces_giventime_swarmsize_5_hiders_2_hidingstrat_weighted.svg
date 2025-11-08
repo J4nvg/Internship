@@ -5398,7 +5398,7 @@ L 497.493125 219.092562
 " style="fill: none; stroke: #808080; stroke-width: 2; stroke-linecap: square"/>
     </g>
     <g id="text_22">
-     <!-- shared_list_init_order -->
+     <!-- shared_list -->
      <g transform="translate(505.493125 222.592562) scale(0.1 -0.1)">
       <use xlink:href="#DejaVuSans-73"/>
       <use xlink:href="#DejaVuSans-68" transform="translate(52.099609 0)"/>

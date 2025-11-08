@@ -186,9 +186,36 @@ def route_interpolator(visit_order: list[point], start: point, graph: nx.Graph, 
 
     return route
 
-def route_interpolator_avoid_nodes(visit_order: list[point], start: point,to_avoid:list[point], graph: nx.Graph, all_paths) -> list[point]:
 
-    pass
+def route_interpolator_avoid_nodes(visit_order: list[point], start: point,to_avoid:set[point], graph: nx.Graph, all_paths) -> list[point]:
+    route = [start]
+    current_loc = start
+
+    for next_waypoint in visit_order:
+        if current_loc == next_waypoint:
+            continue
+
+        penalty = graph.number_of_nodes() + 1
+        def custom_weight_function(u,v,data):
+            if v == next_waypoint:
+                return 1
+
+            if v in to_avoid:
+                return penalty
+
+            return 1
+        new_route = nx.shortest_path(
+            graph,
+            source=current_loc,
+            target=next_waypoint,
+            weight=custom_weight_function,
+        )
+
+        route.extend(new_route[1:])
+        current_loc = next_waypoint
+
+    return route
+
 
 def discounted_distance(p1: point, p2: point, p2p: int, rev: bool) -> Numeric:
     """
