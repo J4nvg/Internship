@@ -3,7 +3,7 @@ from .board import Board
 from .drone import  Swarm
 import numpy as np
 import sys
-from game_config import HIDING_STRATEGY, WIDTH, NUMBER_OF_DRONES_IN_SWARM, DRONE_SYMBOL, NUMBER_OF_HIDER_CANDIDATES,N_HIDERS
+from game_config import HIDING_STRATEGY,SUCCESS_PROBABILITIES_CHOSEN,Pi_DICT,WIDTH, NUMBER_OF_DRONES_IN_SWARM, DRONE_SYMBOL, NUMBER_OF_HIDER_CANDIDATES,N_HIDERS
 import networkx as nx
 from .helpers import get_optimal_permutation_md, get_all_stats, get_whole_and_remainder, get_all_stats_binom, \
     route_interpolator, best_route_discount_distance, route_interpolator_avoid_nodes, manhattan_distance
@@ -17,12 +17,15 @@ from collections import deque
 
 @cache
 def get_all_paths(width, height):
-    board = Board(width=width, n_hider_candidates=0, n_hiders=0,hiding_strategy=HIDING_STRATEGY)
+    board = Board(width=width, n_hider_candidates=0, n_hiders=0,hiding_strategy=HIDING_STRATEGY,success_probabilities=Pi_DICT["SUCCESS_PROBABILITIES_INITIAL"])
     return dict(nx.all_pairs_shortest_path(board.graph))
 
 class Simulation():
-    def __init__(self, n_runs=1, log=False, width=WIDTH, n_hiders=N_HIDERS,n_hider_candidates=NUMBER_OF_HIDER_CANDIDATES,swarm_size=NUMBER_OF_DRONES_IN_SWARM,hiding_strategy=HIDING_STRATEGY):
+    def __init__(self, n_runs=1, log=False, width=WIDTH, n_hiders=N_HIDERS,n_hider_candidates=NUMBER_OF_HIDER_CANDIDATES,swarm_size=NUMBER_OF_DRONES_IN_SWARM,hiding_strategy=HIDING_STRATEGY,success_p=SUCCESS_PROBABILITIES_CHOSEN):
         self.runs = n_runs
+
+        self.pi_dict = Pi_DICT
+        self.success_probabilities = self.pi_dict[success_p]
 
         self.n_hiders = n_hiders
         self.n_hider_candidates = n_hider_candidates
@@ -30,7 +33,7 @@ class Simulation():
         self.hiding_strategy = hiding_strategy
         self.width = width
 
-        self.board = Board(width=width, n_hider_candidates=n_hider_candidates,n_hiders=n_hiders,hiding_strategy=hiding_strategy)
+        self.board = Board(width=width, n_hider_candidates=n_hider_candidates,n_hiders=n_hiders,hiding_strategy=hiding_strategy,success_probabilities=self.success_probabilities)
         self.swarm = Swarm(self.board, size=swarm_size, symbol=DRONE_SYMBOL)
 
         self.log = log
@@ -49,8 +52,8 @@ class Simulation():
         self.total_distance_covered = np.zeros(n_runs)
 
         self.file_name = ''
-        self.log_dir = "./data/sim_logs/"
-        self.res_dir = "./data/sim_results/"
+        self.log_dir = f"./data/sim_logs/{success_p}"
+        self.res_dir = f"./data/sim_results/{success_p}"
 
         self.all_paths = None
         if self.runs > 10:
@@ -120,9 +123,14 @@ class Simulation():
             "total_distance_covered", "hider_frac_found"
         ]
         if self.log:
-            if os.path.exists(f"{self.log_dir}/{filename}"):
-                    os.remove(f"{self.log_dir}/{filename}")
-            with open(f"{self.log_dir}/{filename}", "a", newline='') as f:
+            os.makedirs(self.log_dir, exist_ok=True)
+
+            file_path = os.path.join(self.log_dir, filename)
+
+            if os.path.exists(file_path):
+                os.remove(file_path)
+
+            with open(file_path, "a", newline='') as f:
                 writer = csv.writer(f, delimiter='\t')
                 writer.writerow(fieldnames)
 
@@ -174,6 +182,7 @@ class Simulation():
         pd.reset_option('display.max_rows')
 
         if self.log:
+            os.makedirs(self.res_dir, exist_ok=True)
             table.to_csv(f"{self.res_dir}/{self.file_name}", sep='\t', encoding='utf-8', header=True)
 
         epsilon = 0.01

@@ -1,8 +1,7 @@
 import time
 from csv import excel
 import numpy as np
-from game_config import STATIC_P_p,STATIC_P
-from .helpers import random_succes_p, get_q_A
+from .helpers import random_success_p, get_q_A
 from .sampler import Dist
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -97,12 +96,17 @@ class Cell():
             return '.'
 
 class Board():
-    def __init__(self,width,n_hider_candidates,n_hiders,hiding_strategy, dirichlet_alpha=2, idd=1):
+    def __init__(self,width,n_hider_candidates,n_hiders,hiding_strategy,success_probabilities,dirichlet_alpha=2, idd=1):
         """
         :param INT width: size of the SQUARE board
         :param INT n_hider_candidates: Amount of possible hiding spots
         """
         self.rng = np.random.default_rng()
+
+        self.p_dist = success_probabilities
+
+        self.p_dist_list = self.p_dist["p"].copy()
+        self.p_with_replacement = self.p_dist["WITH_REPLACEMENT"]
 
         self.da = dirichlet_alpha
 
@@ -145,6 +149,9 @@ class Board():
         hiding_strategy = self.hiding_strategy
         self.hider_candidates.clear()
         self.hiders.clear()
+
+        # Copy p distribution from game config
+        self.p_dist_list = self.p_dist["p"].copy()
 
         for cell in self.board.flat:
             cell.reset()
@@ -207,10 +214,14 @@ class Board():
                 if self.hiding_strategy == "random":
                     cell.q = self.dist.sample()
 
-                if STATIC_P:
-                    cell.set_succes_p(STATIC_P_p)
+                if not self.p_with_replacement:
+                    if len(self.p_dist_list) < (self.n_hider_candidates - i):
+                        raise Exception("There cant be more hider candidates than samples success probability samples, if sampled without replacement.")
+                    p = self.p_dist_list.pop()
+                    cell.set_succes_p(p)
                 else:
-                    cell.set_succes_p(random_succes_p())
+                    p = random_success_p(self.p_dist_list)
+                    cell.set_succes_p(p)
         return
 
     def hide(self,tactic="random"):

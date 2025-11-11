@@ -43,7 +43,7 @@ The game features **n** static hiders, which can be placed in one of
 $M_{hider\_candidates} == |S|$ locations, denoted as the set **S**.
 Both the number of hiders and the number of candidate locations are configurable in the `game_config` file.
 
-> **Note:** Setting more than 10 hider candidates significantly impacts simulation speed for the **TTBP** tactic, due to the combinatorial explosion in possible hiding permutations.
+> :memo: **Note:** Setting more than 10 hider candidates significantly impacts simulation speed for the **TTBP** tactic, due to the combinatorial explosion in possible hiding permutations.
 
 At initialization, candidate cells are randomly selected from the grid and assigned hiding probabilities **q<sub>i</sub>**, based on the chosen hiding strategy.
 

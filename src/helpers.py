@@ -1,6 +1,5 @@
 from itertools import permutations, combinations
 import numpy as np
-from game_config import SUCCES_PROBABILITIES
 from scipy.stats import binomtest
 import networkx as nx
 import numpy.typing as npt
@@ -136,8 +135,8 @@ def get_whole_and_remainder(a: int, b: int) -> tuple[int,int]:
     return whole, remainder
 
 
-def random_succes_p() -> Numeric:
-    return np.random.choice(SUCCES_PROBABILITIES)
+def random_success_p(p_dist_list:list[Numeric]) -> Numeric:
+    return np.random.choice(p_dist_list)
 
 
 def get_q_A(possible_hiding_spots, k):
