@@ -31,7 +31,7 @@
 ---
 
 # Todo
-[ ] Refactor code with typing
+ - [ ] Refactor code with typing
 
 ---
 
