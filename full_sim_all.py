@@ -38,8 +38,8 @@ def main():
                             print(f"skip {filename}")
                             continue
                         else:
-                            sim = Simulation(n_runs=args.runs, log=False, width=WIDTH,n_hiders=n_hiders,n_hider_candidates=n_hider_candidates,swarm_size=swarm_size,hiding_strategy=hiding_strategy, success_p=p_dist)
-                            sim.start_main_sim_loop_single_tactic_metrics(plot_boards=True, tactic=args.tactic)
+                            sim = Simulation(n_runs=args.runs, log=True, width=WIDTH,n_hiders=n_hiders,n_hider_candidates=n_hider_candidates,swarm_size=swarm_size,hiding_strategy=hiding_strategy, success_p=p_dist)
+                            sim.start_main_sim_loop_single_tactic_metrics(plot_boards=False, tactic=args.tactic)
 
 
 if __name__ == "__main__":

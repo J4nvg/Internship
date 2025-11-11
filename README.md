@@ -302,3 +302,16 @@ If alpha is kept fixed instead the resulting distribution becomes more spread ou
 [^1]: Lidbetter T (2020) *Search and rescue in the face of uncertain threats*, European Journal of Operational Research 285(3):1153–1160.
     [https://doi.org/10.1016/j.ejor.2020.02.029](https://doi.org/10.1016/j.ejor.2020.02.029)
 
+cd ./projects/Internship && source .venv/bin/activate && uv run ./full_sim_all.py --tactic ttbp --runs 100_000
+cd ./projects/Internship && source .venv/bin/activate && uv run ./full_sim_all.py --tactic dor --runs 100_000
+cd ./projects/Internship && source .venv/bin/activate && uv run ./full_sim_all.py --tactic phs --runs 100_000
+cd ./projects/Internship && source .venv/bin/activate && uv run ./full_sim_all.py --tactic hs --runs 100_000
+cd ./projects/Internship && source .venv/bin/activate && uv run ./full_sim_all.py --tactic sp --runs 100_000
+cd ./projects/Internship && source .venv/bin/activate && uv run ./full_sim_all.py --tactic rndm --runs 100_000
+cd ./projects/Internship && source .venv/bin/activate && uv run ./full_sim_all.py --tactic lb --runs 100_000
+cd ./projects/Internship && source .venv/bin/activate && uv run ./full_sim_all.py --tactic toq --runs 100_000
+cd ./projects/Internship && source .venv/bin/activate && uv run ./full_sim_all.py --tactic tpq --runs 100_000
+cd ./projects/Internship && source .venv/bin/activate && uv run ./full_sim_all.py --tactic dd --runs 100_000
+cd ./projects/Internship && source .venv/bin/activate && uv run ./full_sim_all.py --tactic ddr --runs 100_000
+cd ./projects/Internship && source .venv/bin/activate && uv run ./full_sim_all.py --tactic sl --runs 100_000
+
