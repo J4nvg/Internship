@@ -583,6 +583,7 @@ class Simulation():
         """
         swarm = self.swarm
         graph = self.board.graph
+
         board = self.board
 
         cells_to_visit_list = [hider.loc for hider in board.hider_candidates]
