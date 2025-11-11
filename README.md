@@ -278,7 +278,7 @@ In this search policy every drone can, at each time step *t*, independently choo
 
 Different from the other policies that are given an initial route and then fly it, this searching strategy dynamically assigns new locations—allowing the drones to communicate during the mission.
 
-Let $S$ be the set of possible hiding locations. Initially, up to $\min(swarm_size, |S|)$ drones are assigned to hiding locations from $S$, leaving the remaining drones idle. The active and idle states are tracked, along with a 'to search' queue and a set of successfully searched locations. When a drone is assigned a location, that location is removed from the 'to search' queue.
+Let $S$ be the set of possible hiding locations. Initially, up to $\min(swarm\_size, |S|)$ drones are assigned to hiding locations from $S$, leaving the remaining drones idle. The active and idle states are tracked, along with a 'to search' queue and a set of successfully searched locations. When a drone is assigned a location, that location is removed from the 'to search' queue.
 
 If a drone dies during route traversal or while searching a location, that location is appended back to the 'to search' queue. The closest idle agent (measured by Manhattan distance) is then assigned this target. The route given to this reassigned agent avoids successfully searched locations.
 
