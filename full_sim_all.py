@@ -1,5 +1,5 @@
-NX_CUGRAPH_AUTOCONFIG = True
-from game_config import WIDTH
+NX_CUGRAPH_AUTOCONFIG=True
+from game_config import WIDTH,Pi_DICT
 import os
 import timeit
 from src import Simulation,constants
@@ -18,7 +18,10 @@ def main():
 
     print(f"Starting simulation with {args.runs} runs...")
 
-    probability_distributions = ["SUCCESS_PROBABILITIES_HIGH_VAR" ,"SUCCESS_PROBABILITIES_LOW_VAR","SUCCESS_PROBABILITIES_SKEWED"]
+
+    probability_distributions = Pi_DICT.keys()
+    
+    # probability_distributions = ["SUCCESS_PROBABILITIES_HIGH_VAR" ,"SUCCESS_PROBABILITIES_LOW_VAR","SUCCESS_PROBABILITIES_SKEWED"]
 
     hiding_strategy_to_try = ["greedy","weighted","random"]
 
@@ -33,11 +36,12 @@ def main():
             for n_hider_candidates in n_hider_candidates_to_try:
                 for n_hiders in n_hiders_to_try:
                     for swarm_size in swarm_size_to_try:
-                        filename = f"T-{args.tactic}-W-{20}-HS-{hiding_strategy}-D-{swarm_size}-C-{n_hider_candidates}-H-{n_hiders}-RUNS-{args.runs}.csv"
+                        filename = f"T-{tactic_abbr_full[args.tactic]}-W-{20}-HS-{hiding_strategy}-D-{swarm_size}-C-{n_hider_candidates}-H-{n_hiders}-RUNS-{args.runs}.csv"
                         if os.path.exists(f"./data/sim_results/{p_dist}/{filename}"):
                             print(f"skip {filename}")
                             continue
                         else:
+                            print(f"Starting P dist: {p_dist} Hiding strat: {hiding_strategy} n hider candidates:{n_hider_candidates} with {n_hiders} hiders and swarmsize: {swarm_size}")
                             sim = Simulation(n_runs=args.runs, log=True, width=WIDTH,n_hiders=n_hiders,n_hider_candidates=n_hider_candidates,swarm_size=swarm_size,hiding_strategy=hiding_strategy, success_p=p_dist)
                             sim.start_main_sim_loop_single_tactic_metrics(plot_boards=False, tactic=args.tactic)
 
