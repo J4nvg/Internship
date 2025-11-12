@@ -6,19 +6,50 @@ from scipy.stats import binomtest
 import re
 
 
+Pi_DICT = {
+    # Initial settings, before adding multiple sets
+                # 1       2       3       4       5       6
+    "SUCCESS_PROBABILITIES_INITIAL":
+        {"p": [   1/3,    2/3,    3/4,    4/5,    9/10,   95/100],
+         "WITH_REPLACEMENT": True
+         },
+
+    "SUCCESS_PROBABILITIES_HIGH_VAR":
+        {
+                # 1       2       3       4       5
+        "p": [  0.10,   0.30,   0.60,   0.80,   0.95],
+        "WITH_REPLACEMENT": False
+        },
+
+    "SUCCESS_PROBABILITIES_LOW_VAR":
+                # 1       2       3       4       5
+        {"p": [  0.60,   0.62,   0.64,   0.66,   0.68],
+         "WITH_REPLACEMENT": False
+         },
+
+    "SUCCESS_PROBABILITIES_SKEWED":
+                # 1       2       3       4       5
+        {"p": [  0.60,    0.62,   0.64,   0.66,   0.10],
+         "WITH_REPLACEMENT": False
+         },
+}
+
 # Tactic abbreviation mapping
 tactic_abbr_full = {
-    "ttbp": "together_traverse_best_permutation",
-    "dor": "divide_over_risks",
-    "rndm": "random_walk",
-    "hs": "horizontal_scan_traversal",
-    "phs": "partitioned_horizontal_scan_traversal",
+    "ttbp":"together_traverse_best_permutation",
+    "dor":"divide_over_risks",
+    "rndm":"random_walk",
+    "hs":"horizontal_scan_traversal",
+    "phs":"partitioned_horizontal_scan_traversal",
     "sp": "spiral_traversal_swarm",
     "lb": "lidbetter",
     "toq": "traverse_ordered_qa",
-    "tpq": "traverse_p_qa",
-    "dd": "discounted_distance",
+    "tpq":"traverse_p_qa",
+    "dd":"discounted_distance",
+    "ddr":"discounted_distance_reverse",
+    "sl":"shared_list",
 }
+
 
 # ====================
 # CONFIG
@@ -26,8 +57,10 @@ tactic_abbr_full = {
 HIDING_STRATEGIES = ['greedy', 'random', 'weighted']  # List of hiding strategies to plot
 SWARM_SIZES = [1,5, 10]  # List of swarm sizes to plot
 N_HIDERS_LIST = [2]  # List of number of hiders to plot
-PLOT_DIR = os.path.join("..", "plots", f"H{N_HIDERS_LIST[0]}")
+PLOT_DIR = os.path.join("..", "plots")
 os.makedirs(PLOT_DIR, exist_ok=True)
+probability_distributions = Pi_DICT.keys()
+
 
 # Fixed parameters
 FIXED_HIDING_CANDIDATES = 5
@@ -41,8 +74,17 @@ T_STEP = 10
 T_values = np.arange(T_MIN, T_MAX + T_STEP, T_STEP)
 
 # File paths
-SUMMARY_FILENAME = '../data/dataset/sim_results_dataset.csv'
-SIMLOGS = "../data/sim_logs/"
+def get_file_name(p_dist, t="SUMMARY_FILENAME"):
+    if t == "SUMMARY_FILENAME":
+        try:
+            return f"../data/dataset/{p_dist}/sim_results_dataset.csv"
+        except:
+            raise Exception(f"No file named ../data/dataset/{p_dist}/sim_results_dataset.csv")
+    else:
+        try:
+            return f"../data/sim_logs/{p_dist}/"
+        except:
+            raise Exception(f"No folder named ../data/sim_logs/{p_dist}/")
 
 
 # ====================
@@ -56,7 +98,7 @@ def get_tactic_colors():
     return {tactic: color for tactic, color in zip(all_tactic_names, colors_list)}
 
 
-def plot_prob_vs_swarm_size(df_all, hiding_strategy, n_hiders, tactic_colors):
+def plot_prob_vs_swarm_size(df_all, hiding_strategy, n_hiders, tactic_colors,p_dist):
     """Create plot: Probability vs Swarm Size"""
     df_filtered = df_all[
         (df_all['hide_strategy'] == hiding_strategy) &
@@ -119,10 +161,12 @@ def plot_prob_vs_swarm_size(df_all, hiding_strategy, n_hiders, tactic_colors):
 
     ax.set_xlabel('Swarm Size', fontsize=12)
     ax.set_ylabel('P(All Found)', fontsize=12)
+    p_dist_title = p_dist.lower()
     title = (
         f'Probability of All Hiders Found vs. Swarm Size\n'
         f'Hiders={n_hiders}, HS={hiding_strategy}, '
         f'Grid={FIXED_GRID_WIDTH}x{FIXED_GRID_WIDTH}'
+        f'{p_dist_title}'
     )
     ax.set_title(title, fontsize=14)
     ax.legend(loc='upper left', title='Tactics')
@@ -131,12 +175,14 @@ def plot_prob_vs_swarm_size(df_all, hiding_strategy, n_hiders, tactic_colors):
     ax.grid(True, linestyle='--', alpha=0.6)
 
     plt.tight_layout()
-    plt.savefig(os.path.join(PLOT_DIR, f"psucces_givenswarmsize_hiders_{n_hiders}_hidingstrat_{hiding_strategy}.svg"),bbox_inches="tight")
+    plot_dir = os.path.join(f"{PLOT_DIR}", f"{p_dist}", f"H{N_HIDERS_LIST[0]}")
+    os.makedirs(plot_dir, exist_ok=True)
+    plt.savefig(os.path.join(plot_dir, f"psucces_givenswarmsize_hiders_{n_hiders}_hidingstrat_{hiding_strategy}.svg"),bbox_inches="tight")
 
     return fig
 
 
-def plot_prob_vs_time(hiding_strategy, swarm_size, n_hiders, tactic_colors):
+def plot_prob_vs_time(hiding_strategy, swarm_size, n_hiders, tactic_colors,p_dist=None):
     """Create plot: Probability vs Time (Stepslimit)"""
     filename_pattern = re.compile(
         r"T-(.+)"
@@ -149,8 +195,12 @@ def plot_prob_vs_time(hiding_strategy, swarm_size, n_hiders, tactic_colors):
     )
 
     results = {}
+    sim_logs = ""
 
-    for filename in os.listdir(SIMLOGS):
+
+    sim_logs = get_file_name(f"{p_dist}", "sim_logs")
+
+    for filename in os.listdir(sim_logs):
         if not filename.endswith('.csv'):
             continue
 
@@ -173,7 +223,7 @@ def plot_prob_vs_time(hiding_strategy, swarm_size, n_hiders, tactic_colors):
                 width == FIXED_GRID_WIDTH and
                 runs == FIXED_NUMBER_OF_RUNS):
 
-            df = pd.read_csv(os.path.join(SIMLOGS, filename), header=0, sep=r'\s+')
+            df = pd.read_csv(os.path.join(sim_logs, filename), header=0, sep=r'\s+')
             successful_runs = df[df['all_found'] == True]
 
             probabilities = []
@@ -230,10 +280,12 @@ def plot_prob_vs_time(hiding_strategy, swarm_size, n_hiders, tactic_colors):
 
     ax.set_xlabel('Stepslimit T', fontsize=12)
     ax.set_ylabel('P(All Found | steps $\leq$ T)', fontsize=12)
+    p_dist_title = p_dist.lower()
     title = (
         f'Probability of All Hiders Found vs. Stepslimit (T)\n'
         f'Swarm Size={swarm_size}, Hiders={n_hiders}, '
         f'Grid={FIXED_GRID_WIDTH}x{FIXED_GRID_WIDTH}, HS={hiding_strategy}'
+        f'{p_dist_title}'
     )
     ax.set_title(title, fontsize=14)
     ax.legend(loc='lower right', title='Tactics')
@@ -243,7 +295,9 @@ def plot_prob_vs_time(hiding_strategy, swarm_size, n_hiders, tactic_colors):
     ax.grid(True, linestyle='--', alpha=0.6)
 
     plt.tight_layout()
-    plt.savefig(os.path.join(PLOT_DIR, f"psucces_giventime_swarmsize_{swarm_size}_hiders_{n_hiders}_hidingstrat_{hiding_strategy}.svg"),bbox_inches="tight")
+    plot_dir = os.path.join(f"{PLOT_DIR}", f"{p_dist}", f"H{N_HIDERS_LIST[0]}")
+    os.makedirs(plot_dir, exist_ok=True)
+    plt.savefig(os.path.join(plot_dir, f"psucces_giventime_swarmsize_{swarm_size}_hiders_{n_hiders}_hidingstrat_{hiding_strategy}.svg"),bbox_inches="tight")
     return fig
 
 
@@ -253,36 +307,37 @@ def plot_prob_vs_time(hiding_strategy, swarm_size, n_hiders, tactic_colors):
 
 def main():
     # Load data
-    print("Loading data...")
-    df_all = pd.read_csv(SUMMARY_FILENAME)
-    tactic_colors = get_tactic_colors()
+    for p_dist in probability_distributions:
+        print("Loading data...")
+        df_all = pd.read_csv(get_file_name(p_dist,t="SUMMARY_FILENAME"))
+        tactic_colors = get_tactic_colors()
 
-    figures = []
+        figures = []
 
-    # Generate Probability vs Swarm Size plots
-    print("\nGenerating Probability vs Swarm Size plots...")
-    for hiding_strategy in HIDING_STRATEGIES:
-        for n_hiders in N_HIDERS_LIST:
-            print(f"  - HS={hiding_strategy}, Hiders={n_hiders}")
-            fig = plot_prob_vs_swarm_size(df_all, hiding_strategy, n_hiders, tactic_colors)
-            if fig:
-                figures.append(fig)
-
-    # Generate Probability vs Time plots
-    print("\nGenerating Probability vs Time plots...")
-    for hiding_strategy in HIDING_STRATEGIES:
-        for swarm_size in SWARM_SIZES:
+        # Generate Probability vs Swarm Size plots
+        print("\nGenerating Probability vs Swarm Size plots...")
+        for hiding_strategy in HIDING_STRATEGIES:
             for n_hiders in N_HIDERS_LIST:
-                print(f"  - HS={hiding_strategy}, Swarm={swarm_size}, Hiders={n_hiders}")
-                fig = plot_prob_vs_time(hiding_strategy, swarm_size, n_hiders, tactic_colors)
+                print(f"  - HS={hiding_strategy}, Hiders={n_hiders}")
+                fig = plot_prob_vs_swarm_size(df_all, hiding_strategy, n_hiders, tactic_colors, p_dist)
                 if fig:
                     figures.append(fig)
 
-    print(f"\n{'=' * 50}")
-    print(f"Total plots generated: {len(figures)}")
-    print(f"{'=' * 50}")
-    print("\nAll plots are now open. Close windows to exit.")
-    plt.show()
+        # Generate Probability vs Time plots
+        print("\nGenerating Probability vs Time plots...")
+        for hiding_strategy in HIDING_STRATEGIES:
+            for swarm_size in SWARM_SIZES:
+                for n_hiders in N_HIDERS_LIST:
+                    print(f"  - HS={hiding_strategy}, Swarm={swarm_size}, Hiders={n_hiders}")
+                    fig = plot_prob_vs_time(hiding_strategy, swarm_size, n_hiders, tactic_colors,p_dist)
+                    if fig:
+                        figures.append(fig)
+
+        print(f"\n{'=' * 50}")
+        print(f"Total plots generated: {len(figures)}")
+        print(f"{'=' * 50}")
+        print("\nAll plots are now open. Close windows to exit.")
+        plt.show()
 
 
 if __name__ == "__main__":
