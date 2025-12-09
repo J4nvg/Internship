@@ -27,6 +27,7 @@
   - [Spiral scan traversal](#spiral-scan-traversal)
   - [Random Walk](#random-walk)
   - [Shared list](#shared-list)
+- [Improvements](#improvements)
 - [About Dirichlet Dist](#about-the-dirichlet-distribution-alpha-value)
 ---
 
@@ -97,10 +98,12 @@ This means that if the drone enters the cell, and is taken down or captured, it 
 The success probabilities `game_config` file:
 
 ```python
-SUCCES_PROBABILITIES = [1/3,2/3,3/4,4/5,9/10,95/100]
+SUCCESS_PROBABILITIES_HIGH_VAR = [  0.10,   0.30,   0.60,   0.80,   0.95]
+
+SUCCESS_PROBABILITIES_LOW_VAR: [  0.60,   0.62,   0.64,   0.66,   0.68]
 ```
 
-For each hider candidate a random sample is *drawn with replacement* from this `SUCCES_PROBABILITIES` list.
+For each hider candidate a sample is drawn from this `SUCCES_PROBABILITIES` list.
 
 ---
 
@@ -287,6 +290,13 @@ When a drone successfully completes its route and searches a location, that loca
 Note that there is no priority given to cells with a higher $1- p_i$ such that these are searched first. This could be a future improvement such that smaller sized swarms are more successful.
 
 ---
+## Future improvements for tactics
+- In routing avoid expanded nodes
+- Sort the order for shared_list
+- Improve discounted distance; Here the cost is not $1-p_{target-node}$ but it is $1 - \prod p_{nodes-in-path}$ 
+
+
+---
 
 ###### About the Dirichlet distribution alpha value:
 
@@ -298,6 +308,8 @@ If one wants to preserve an even distribution as the number of hider candidates 
 If alpha is kept fixed instead the resulting distribution becomes more spread out.
 
 ---
+
+
 
 [^1]: Lidbetter T (2020) *Search and rescue in the face of uncertain threats*, European Journal of Operational Research 285(3):1153–1160.
     [https://doi.org/10.1016/j.ejor.2020.02.029](https://doi.org/10.1016/j.ejor.2020.02.029)
