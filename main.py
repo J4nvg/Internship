@@ -41,8 +41,9 @@ def main():
 
     tactics = tactic_abbr_full.keys()
 
-    parser.add_argument("--plot", action='store_true', help="plots boards to visualise the simulation run")
     parser.add_argument("--tactic",required=False,type=str,choices=tactics, help="Tactic to use")
+    parser.add_argument("--plot", action='store_true', help="plots boards in original mode to visualise the simulation run")
+    parser.add_argument("--plot_hm", action='store_true', help="plots boards in heatmap mode to visualise the simulation run")
     parser.add_argument('--runs',type=int,default=1,help='Number of simulation runs.')
     parser.add_argument( '--log', action='store_true',help='Enable logging to CSV.', default=False)
     parser.add_argument( '--plotspeed',default=.2, type=float,help='increase or decrease plotting speed, 0 < speed < 1')
@@ -60,7 +61,12 @@ def main():
 
     print(f"Starting simulation for tactic: {args.tactic} with {args.runs} runs...")
     sim = Simulation(n_runs=args.runs, log=args.log)
-    sim.start_main_sim_loop_single_tactic_metrics(plot_boards=args.plot,plot_interval=args.plotspeed, tactic=args.tactic)
+
+    if(args.plot_hm or args.plot):
+        plot = True
+
+
+    sim.start_main_sim_loop_single_tactic_metrics(plot_boards=plot,plot_hm=args.plot_hm,plot_interval=args.plotspeed, tactic=args.tactic)
 
     # sim = Simulation(n_runs=1_000, log=False)
     # sim.start_main_sim_loop_single_tactic_metrics(plot_boards=False,plot_interval=0.1, tactic="rndm")

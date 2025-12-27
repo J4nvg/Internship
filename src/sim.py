@@ -13,7 +13,7 @@ import pandas as pd
 import os
 import csv
 from collections import deque
-
+import heapq
 
 @cache
 def get_all_paths(width, height):
@@ -92,7 +92,7 @@ class Simulation():
 
                 writer.writerow(data_row)
 
-    def start_main_sim_loop_single_tactic_metrics(self, plot_boards=False, plot_interval=0.2, tactic="ttbp"):
+    def start_main_sim_loop_single_tactic_metrics(self, plot_boards=False, plot_hm=False, plot_interval=0.2, tactic="ttbp"):
 
         tactic_map = {
             "ttbp": (self.together_traverse_best_permutation,"together_traverse_best_permutation"),
@@ -107,6 +107,7 @@ class Simulation():
             "dd": (self.discounted_distance,"discounted_distance"),
             "ddr": (self.discounted_distance_rev,"discounted_distance_reverse"),
             "sl": (self.shared_list,"shared_list"),
+            "sl_heap": (self.shared_list_heap,"shared_list_heap"),
         }
 
         if tactic not in tactic_map:
@@ -139,7 +140,7 @@ class Simulation():
             self.board.reset()
             self.swarm.reset()
 
-            steps, all_found, taken_down,frac_found = strat(plot_boards=plot_boards, plot_interval=plot_interval)
+            steps, all_found, taken_down,frac_found = strat(plot_boards=plot_boards, plot_hm=plot_hm, plot_interval=plot_interval)
 
             unique_cells_covered = set({})
             distance_travelled = np.zeros(self.swarm.size)
@@ -194,7 +195,7 @@ class Simulation():
 
         return
 
-    def run_random_walk(self, plot_boards=True, plot_interval=0.2):
+    def run_random_walk(self, plot_boards=False, plot_hm=False, plot_interval=0.2):
         swarm = self.swarm
         n_found = 0
         n_hiders = self.board.n_hiders
@@ -215,14 +216,14 @@ class Simulation():
                         break
             if plot_boards:
                 sys.stdout.write("\033[H\033[J")
-                self.board.print_board()
+                self.board.print_board(plot_hm)
                 sys.stdout.flush()
                 time.sleep(plot_interval)
 
         # print(f"Took {r} steps and target was", "found" if found else "not found", f", {len(swarm.takenDown)} drones were taken down.")
         return steps, all_found, len(swarm.takenDown), n_found/n_hiders
 
-    def together_traverse_best_permutation(self, plot_boards=True, plot_interval=0.2):
+    def together_traverse_best_permutation(self, plot_boards=False, plot_hm=False, plot_interval=0.2):
         swarm = self.swarm
         graph = self.board.graph
         if not swarm.same_start:
@@ -240,9 +241,9 @@ class Simulation():
                                                                                     hider_candidate_locations)
         route = route_interpolator(optimal_path_sequence,sample_drone.start,graph,self.all_paths)
 
-        return self._run_traversal_loop_swarm(swarm, route, plot_boards, plot_interval, terminate_after_route=False)
+        return self._run_traversal_loop_swarm(swarm, route, plot_boards,plot_hm, plot_interval, terminate_after_route=False)
 
-    def divide_over_risks(self, plot_boards=True, plot_interval=0.2):
+    def divide_over_risks(self, plot_boards=False, plot_hm=False, plot_interval=0.2):
         swarm = self.swarm
         graph = self.board.graph
         if not swarm.same_start:
@@ -304,9 +305,9 @@ class Simulation():
                 c += 1
         if plot_boards:
             time.sleep(2)
-        return self._run_traversal_loop_individual(swarm, plot_boards, plot_interval)
+        return self._run_traversal_loop_individual(swarm, plot_boards,plot_hm, plot_interval)
 
-    def horizontal_scan_traversal_swarm(self, plot_boards=True, plot_interval=0.1):
+    def horizontal_scan_traversal_swarm(self, plot_boards=False, plot_hm=False, plot_interval=0.1):
         swarm = self.swarm
         if not swarm.same_start:
             raise Exception(f"together_to_candidates not implemented yet for {swarm.init_strat}")
@@ -326,9 +327,9 @@ class Simulation():
         else:
             route = self.board.route_cache["hs"]
 
-        return self._run_traversal_loop_swarm(swarm, route, plot_boards, plot_interval, terminate_after_route=True)
+        return self._run_traversal_loop_swarm(swarm, route,plot_boards,plot_hm, plot_interval, terminate_after_route=True)
 
-    def partitioned_horizontal_scan_traversal(self, plot_boards=True, plot_interval=0.2):
+    def partitioned_horizontal_scan_traversal(self, plot_boards=False, plot_hm=False, plot_interval=0.2):
         swarm = self.swarm
 
         if not "snake_odd" in self.board.route_cache:
@@ -388,9 +389,9 @@ class Simulation():
                 final_route = start_path + full_route[start_path_index:]
                 drone.set_route(final_route)
 
-        return self._run_traversal_loop_individual(swarm, plot_boards, plot_interval)
+        return self._run_traversal_loop_individual(swarm,plot_boards,plot_hm, plot_interval)
 
-    def spiral_traversal_swarm(self, plot_boards=True, plot_interval=0.1):
+    def spiral_traversal_swarm(self, plot_boards=False, plot_hm=False, plot_interval=0.1):
         swarm = self.swarm
         if not swarm.same_start:
             raise Exception(f"together_to_candidates not implemented yet for {swarm.init_strat}")
@@ -433,12 +434,13 @@ class Simulation():
         route = self.board.route_cache["sp"]
 
         return self._run_traversal_loop_swarm(
-            swarm, route, plot_boards, plot_interval, terminate_after_route=True
+            swarm, route,plot_boards,plot_hm, plot_interval, terminate_after_route=True
         )
 
-    def lidbetter_swarm(self, plot_boards=True, plot_interval=0.2):
+    def lidbetter_swarm(self, plot_boards=False, plot_hm=False, plot_interval=0.2):
         """
         A subset of possible hiding locations is chosen by the q_a formula, the rest of the cells are explored uniformly at random.
+
         """
         swarm = self.swarm
         if not swarm.same_start:
@@ -463,10 +465,10 @@ class Simulation():
         route = route_interpolator(visit_cells_order,start,board.graph,self.all_paths)
 
         return self._run_traversal_loop_swarm(
-            swarm, route, plot_boards, plot_interval, terminate_after_route=False
+            swarm, route,plot_boards,plot_hm, plot_interval, terminate_after_route=False
         )
 
-    def traverse_ordered_qa(self, plot_boards=True, plot_interval=0.2):
+    def traverse_ordered_qa(self, plot_boards=False, plot_hm=False, plot_interval=0.2):
         """
         Order q_a descending, assign the highest subset to drone 1, 2nd highest subset to drone 2, etc. and wrap around.
         :return:
@@ -510,9 +512,9 @@ class Simulation():
             drone.set_route(fullroute)
         # if plot_boards:
         #     time.sleep(2)
-        return self._run_traversal_loop_individual(swarm, plot_boards, plot_interval)
+        return self._run_traversal_loop_individual(swarm,plot_boards,plot_hm, plot_interval)
 
-    def traverse_weighted_qa(self, plot_boards=True, plot_interval=0.2):
+    def traverse_weighted_qa(self, plot_boards=False, plot_hm=False, plot_interval=0.2):
         """
         Assign subset A with weight Q_a to a drone, rest of the locations uniform at random, for each drone in the swarm
         """
@@ -550,9 +552,9 @@ class Simulation():
 
             drone.set_route(fullroute)
 
-        return self._run_traversal_loop_individual(swarm, plot_boards, plot_interval)
+        return self._run_traversal_loop_individual(swarm,plot_boards,plot_hm, plot_interval)
 
-    def discounted_distance(self, plot_boards=True, plot_interval=0.2):
+    def discounted_distance(self, plot_boards=False, plot_hm=False, plot_interval=0.2):
         """
         Set the 'optimal' permutation of routes based on: sum of distance * 1-p_i over all candidate points
         """
@@ -567,9 +569,9 @@ class Simulation():
         visit_cells_order = best_route_discount_distance(board.hider_candidates, start_cell)
         fullroute = route_interpolator(visit_cells_order,start_loc,graph,self.all_paths)
 
-        return self._run_traversal_loop_swarm(swarm, fullroute, plot_boards, plot_interval, terminate_after_route=True)
+        return self._run_traversal_loop_swarm(swarm, fullroute,plot_boards,plot_hm, plot_interval, terminate_after_route=True)
 
-    def discounted_distance_rev(self, plot_boards=True, plot_interval=0.2):
+    def discounted_distance_rev(self, plot_boards=False, plot_hm=False, plot_interval=0.2):
         """
         Set the 'optimal' permutation of routes based on: sum of distance * p_i over all candidate points
         """
@@ -584,9 +586,9 @@ class Simulation():
         visit_cells_order = best_route_discount_distance(board.hider_candidates, start_cell, rev=True)
         fullroute = route_interpolator(visit_cells_order,start_loc,graph,self.all_paths)
 
-        return self._run_traversal_loop_swarm(swarm, fullroute, plot_boards, plot_interval, terminate_after_route=True)
+        return self._run_traversal_loop_swarm(swarm, fullroute,plot_boards,plot_hm, plot_interval, terminate_after_route=True)
 
-    def shared_list(self, plot_boards=True, plot_interval=0.2):
+    def shared_list(self, plot_boards=False, plot_hm=False, plot_interval=0.2):
         """
         Drones in swarm have a shared goal list and can communicate what has been explored and when one dies
         """
@@ -613,9 +615,40 @@ class Simulation():
             route = route_interpolator([first_goal], drone.start, graph, self.all_paths)
             drone.set_route(route)
 
-        return self._run_traversal_loop_individual_shared_list(swarm,mapping,plot_boards, plot_interval)
+        return self._run_traversal_loop_individual_shared_list(swarm,mapping,plot_boards,plot_hm, plot_interval)
 
-    def _run_traversal_loop_swarm(self, swarm, route, plot_boards=False, plot_interval=0.2, terminate_after_route=False):
+    def shared_list_heap(self, plot_boards=False, plot_hm=False, plot_interval=0.2):
+        """
+        Drones in swarm have a shared goal list and can communicate what has been explored and when one dies
+
+        """
+
+        swarm = self.swarm
+        graph = self.board.graph
+
+        board = self.board
+
+        cells_to_visit_heap = [(1 - cell.p, cell.loc) for cell in board.hider_candidates]
+        heapq.heapify(cells_to_visit_heap)
+
+        mapping = {
+            "to_visit" : cells_to_visit_heap
+        }
+
+        for drone in swarm.swarm:
+            #Initialize the first n_hider_candidate drones with a goal
+            if not mapping["to_visit"]:
+                break
+
+            priority, first_goal = heapq.heappop(mapping["to_visit"])
+            mapping[drone] = first_goal
+
+            route = route_interpolator([first_goal], drone.start, graph, self.all_paths)
+            drone.set_route(route)
+
+        return self._run_traversal_loop_individual_shared_list(swarm,mapping,plot_boards,plot_hm, plot_interval,heaped=True)
+
+    def _run_traversal_loop_swarm(self, swarm, route, plot_boards=False, plot_hm=False, plot_interval=0.2, terminate_after_route=False):
         n_found = 0
         n_hiders = self.board.n_hiders
         all_found = False
@@ -632,7 +665,7 @@ class Simulation():
                     all_found = True if n_found == n_hiders else False
             if plot_boards:
                 sys.stdout.write("\033[H\033[J") # Clear screen
-                self.board.print_board()
+                self.board.print_board(plot_hm)
                 sys.stdout.flush()
                 time.sleep(plot_interval)
 
@@ -644,7 +677,7 @@ class Simulation():
         swarm.remove_swarm()
         return steps, all_found, len(swarm.takenDown),n_found/n_hiders
 
-    def _run_traversal_loop_individual(self, swarm, plot_boards=False, plot_interval=0.2):
+    def _run_traversal_loop_individual(self, swarm, plot_boards=False, plot_hm=False, plot_interval=0.2):
         n_found = 0
         n_hiders = self.board.n_hiders
         all_found = False
@@ -657,7 +690,7 @@ class Simulation():
                     all_found = True if n_found == n_hiders else False
             if plot_boards:
                 sys.stdout.write("\033[H\033[J")
-                self.board.print_board()
+                self.board.print_board(plot_hm)
                 sys.stdout.flush()
                 time.sleep(plot_interval)
 
@@ -667,7 +700,7 @@ class Simulation():
         swarm.remove_swarm()
         return steps, all_found, len(swarm.takenDown),n_found/n_hiders
 
-    def _run_traversal_loop_individual_shared_list(self, swarm, mapping, plot_boards=False, plot_interval=0.2):
+    def _run_traversal_loop_individual_shared_list(self, swarm, mapping, plot_boards=False, plot_hm=False, plot_interval=0.2, heaped=False):
 
         n_found = 0
         n_hiders = self.board.n_hiders
@@ -675,14 +708,15 @@ class Simulation():
         steps = 1
 
         graph = self.board.graph
-        to_visit = mapping["to_visit"]  # shared deque
+        to_visit = mapping["to_visit"]  # shared list
         visited_candidates = set({})
         idle = set({})
-        active = set({})
+
         swarm_set = set(swarm.swarm)
         for drone in swarm.swarm:
             if not drone in mapping:
                 idle.add(drone)
+
         active = swarm_set - idle
 
         while not all_found and len(swarm.takenDown) < swarm.size:
@@ -693,70 +727,147 @@ class Simulation():
             # print(f"complete swarm: {swarm.swarm}")
             # print(f"mapping: {mapping}")
 
-            for loc in list(to_visit):
-                if not available:
-                    break
+            if (heaped):
+                while available and to_visit:
+                    # Pop the safest target available
+                    priority, target_loc = heapq.heappop(to_visit)
 
-                closest = None
-                dist = float('inf')
+                    # Find the drone that can reach this high-priority target fastest
+                    closest_drone = None
+                    min_dist = float('inf')
 
-                for d in available:
-                    distance = manhattan_distance(loc,d.current_loc)
-                    if distance < dist:
-                        closest = d
-                        dist = distance
+                    for d in available:
+                        dist = manhattan_distance(target_loc, d.current_loc)
+                        if dist < min_dist:
+                            closest_drone = d
+                            min_dist = dist
 
+                    # Assign target
+                    mapping[closest_drone] = target_loc
 
-                goal = loc
-                mapping[closest] = goal
+                    # Calculate route avoiding already searched nodes
+                    route = route_interpolator_avoid_nodes(
+                        [target_loc],
+                        closest_drone.current_loc,
+                        visited_candidates,
+                        graph,
+                        self.all_paths
+                    )
 
-                route = route_interpolator_avoid_nodes([goal], closest.current_loc, visited_candidates,
-                                                       graph, self.all_paths)
-                closest.set_route(route)
-                idle.remove(closest)
-                active.add(closest)
-                available.remove(closest)
-                to_visit.remove(loc)
+                    closest_drone.set_route(route)
 
+                    # Update sets
+                    idle.remove(closest_drone)
+                    available.remove(closest_drone)
+                    active.add(closest_drone)
 
-            for drone in list(swarm.swarm):
-                # Leave 'dead' drones
-                if not drone.alive:
-                    continue
+                    # Move Drones
+                for drone in list(swarm.swarm):
+                    if not drone.alive:
+                        continue
 
-                found, is_down = drone.move_next_from_route()
+                    found, is_down = drone.move_next_from_route()
 
-                #Drone got taken down
-                if is_down:
-#                     print(f"drone in {drone.current_loc} is now down")
-                    failed_goal = mapping.pop(drone, None)
-#                     print(f"adding {failed_goal} back to mapping")
-
-                    active.remove(drone)
-                    if failed_goal is not None:
-                        to_visit.append(failed_goal)  # retry goal
-
-                    continue
-
-                # Found a hider
-                if found:
-                    n_found += 1
-                    all_found = n_found == n_hiders
-
-                # End of route
-                if drone.route_length == 0:
-#                     print(f"{[drone]} ended route in {drone.current_loc}")
-                    finished_goal = mapping.pop(drone, None)
-                    visited_candidates.add(finished_goal)
-                    if drone in active:
+                    # Case 1: Drone Taken Down
+                    if is_down:
+                        failed_goal = mapping.pop(drone, None)
                         active.remove(drone)
-                        idle.add(drone)
-                    if drone in swarm.temp_unavailable:
-                        swarm.to_available(drone)
+
+                        if failed_goal is not None:
+                            # Re-insert failed goal into heap
+                            # We need to look up the risk (p) again
+                            cell_p = graph.nodes[failed_goal]['cell'].p
+                            heapq.heappush(to_visit, (1 - cell_p, failed_goal))
+                        continue
+
+                    # Case 2: Hider Found
+                    if found:
+                        n_found += 1
+                        all_found = n_found == n_hiders
+
+                    # Case 3: Route Completed (Cell Searched)
+                    if drone.route_length == 0:
+                        finished_goal = mapping.pop(drone, None)
+                        if finished_goal:
+                            visited_candidates.add(finished_goal)
+
+                        if drone in active:
+                            active.remove(drone)
+                            idle.add(drone)
+                        if drone in swarm.temp_unavailable:
+                            swarm.to_available(drone)
+            else:
+                for loc in list(to_visit):
+                    if not available:
+                        break
+
+                    closest = None
+                    dist = float('inf')
+
+                    for d in available:
+                        distance = manhattan_distance(loc,d.current_loc)
+                        if distance < dist:
+                            closest = d
+                            dist = distance
+
+
+                    goal = loc
+                    mapping[closest] = goal
+
+                    route = route_interpolator_avoid_nodes(
+                        [goal],
+                        closest.current_loc,
+                        visited_candidates,
+                        graph,
+                        self.all_paths
+                    )
+
+                    closest.set_route(route)
+
+                    idle.remove(closest)
+                    active.add(closest)
+                    available.remove(closest)
+                    to_visit.remove(loc)
+
+
+                for drone in list(swarm.swarm):
+                    # Leave 'dead' drones
+                    if not drone.alive:
+                        continue
+
+                    found, is_down = drone.move_next_from_route()
+
+                    #Drone got taken down
+                    if is_down:
+    #                     print(f"drone in {drone.current_loc} is now down")
+                        failed_goal = mapping.pop(drone, None)
+    #                     print(f"adding {failed_goal} back to mapping")
+
+                        active.remove(drone)
+                        if failed_goal is not None:
+                            to_visit.append(failed_goal)  # retry goal
+
+                        continue
+
+                    # Found a hider
+                    if found:
+                        n_found += 1
+                        all_found = n_found == n_hiders
+
+                    # End of route
+                    if drone.route_length == 0:
+    #                     print(f"{[drone]} ended route in {drone.current_loc}")
+                        finished_goal = mapping.pop(drone, None)
+                        visited_candidates.add(finished_goal)
+                        if drone in active:
+                            active.remove(drone)
+                            idle.add(drone)
+                        if drone in swarm.temp_unavailable:
+                            swarm.to_available(drone)
 
             if plot_boards:
                 sys.stdout.write("\033[H\033[J")
-                self.board.print_board()
+                self.board.print_board(plot_hm)
                 sys.stdout.flush()
                 time.sleep(plot_interval)
 

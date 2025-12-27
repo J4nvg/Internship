@@ -291,7 +291,8 @@ Note that there is no priority given to cells with a higher $1- p_i$ such that t
 
 ---
 ## Future improvements for tactics
-- In routing avoid expanded nodes
+- In routing avoid expanded nodes:
+  - Give 'memory' of previously expanded nodes, inorder to avoid unnecessary risk
 - Sort the order for shared_list
 - Improve discounted distance; Here the cost is not $1-p_{target-node}$ but it is $1 - \prod p_{nodes-in-path}$ 
 

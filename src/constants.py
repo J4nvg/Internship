@@ -11,5 +11,6 @@ tactic_abbr_full = {
     "dd":"discounted_distance",
     "ddr":"discounted_distance_reverse",
     "sl":"shared_list",
+    "sl_heap":"shared_list_heap",
 }
 

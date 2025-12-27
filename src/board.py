@@ -7,7 +7,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import networkx as nx
-
+import re
 
 
 class Cell():
@@ -87,7 +87,7 @@ class Cell():
         elif len(self.drone_container)>0 and self.contains_hider:
             return f"\x1b[3;33;43m■\x1b[0m"
         elif len(self.drone_container)>0:
-            return f"{len(self.drone_container)}"
+            return f"\x1b[45m{len(self.drone_container)}\x1b[0m"
         elif self.contains_hider:
             return f"\x1b[6;30;42m#\x1b[0m"
         elif self.is_hider_candidate :
@@ -327,13 +327,107 @@ class Board():
         plt.ylabel("Y coordinate")
         plt.show()
 
-    def print_board(self):
-        horizontal_line = "== " * (self.width + 1)
-        print(f" {horizontal_line}")
-        for row in self.board:
-            row_str = "  ".join(str(cell) for cell in row)
-            print(f'‖  {row_str}  ‖')
-        print(f" {horizontal_line}")
+    def print_board(self,plot_hm=False):
+        if not plot_hm:
+            horizontal_line = "== " * (self.width + 1)
+            print(f" {horizontal_line}")
+            for row in self.board:
+                row_str = " ".join(str(cell) for cell in row)
+                print(f'‖ {row_str} ‖')
+            print(f" {horizontal_line}")
+        else:
+            candidate_ps = [c.p for row in self.board for c in row if c.is_hider_candidate]
+            if candidate_ps:
+                min_p, max_p = min(candidate_ps), max(candidate_ps)
+            else:
+                min_p, max_p = 0, 1
+
+            cell_width = 3
+            line_len = (cell_width + 2) * self.width
+            horizontal_line = "=" * (line_len + 2)
+
+            print(f" {horizontal_line}")
+            for row in self.board:
+                formatted_cells = []
+                for cell in row:
+                    original_s = str(cell)
+                    clean_s = re.sub(r'\x1b\[[0-9;]*m', '', original_s)
+
+                    # Pad clean text
+                    total_padding = cell_width - len(clean_s)
+                    pad_l = " " * (total_padding // 2)
+                    pad_r = " " * (total_padding - len(pad_l))
+                    padded_s = f"{pad_l}{clean_s}{pad_r}"
+
+                    if cell.is_hider_candidate:
+                        colored = self.get_heatmap_color(cell.p, padded_s, min_p, max_p, background_mode=True)
+                        formatted_cells.append(colored)
+                    else:
+                        formatted_cells.append(f"{pad_l}{original_s}{pad_r}")
+
+                row_str = "  ".join(formatted_cells)
+                print(f'‖  {row_str}  ‖')
+            print(f" {horizontal_line}")
+
+            # --- SECOND BOARD (VALUES) ---
+            print(f" {horizontal_line}")
+            for row in self.board:
+                formatted_cells = []
+                for cell in row:
+                    # 1. Get value string (Using str(cell.p) or f"{cell.p:.2f}" for neatness)
+                    val_s = str(cell.p)
+
+                    # 2. Pad first (crucial for background color)
+                    total_padding = cell_width - len(val_s)
+                    if total_padding < 0: total_padding = 0  # Safety if number is huge
+
+                    pad_l = " " * (total_padding // 2)
+                    pad_r = " " * (total_padding - len(pad_l))
+                    padded_s = f"{pad_l}{val_s}{pad_r}"
+
+                    # 3. Apply Color
+                    if cell.is_hider_candidate:
+                        colored = self.get_heatmap_color(cell.p, padded_s, min_p, max_p, background_mode=True)
+                        formatted_cells.append(colored)
+                    else:
+                        formatted_cells.append(padded_s)
+
+                row_str = "  ".join(formatted_cells)
+                print(f'‖  {row_str}  ‖')
+            print(f" {horizontal_line}")
+            col_min = self.get_heatmap_color(min_p, min_p, min_p, max_p, background_mode=True)
+            col_max = self.get_heatmap_color(max_p, max_p, min_p, max_p, background_mode=True)
+            print(f"Success probability, p between ( {col_min} - {col_max} ) ")
+
+    def get_heatmap_color(self, val, text_to_print, min_val, max_val, background_mode=True):
+        RESET = "\x1b[0m"
+        TEXT = "\x1b[30m"
+
+        # Handle edge case (all values same)
+        if max_val == min_val:
+            if background_mode:
+                return f"\x1b[48;5;45m{TEXT}{text_to_print}{RESET}"
+            return f"\x1b[38;5;45m{text_to_print}{RESET}"
+
+        ratio = (val - min_val) / (max_val - min_val)
+
+        # select color ID based on ratio
+        if ratio < 0.25:
+            c_id = "196"  # Red
+        elif ratio < 0.5:
+            c_id = "208"  # Orange
+        elif ratio < 0.75:
+            c_id = "227"  # Yellow
+        else:
+            c_id = "46"  # Green
+
+        if background_mode:
+            # \x1b[48;5;... is BACKGROUND color
+            # {WHITE_TEXT} sets the text to white on top of that background
+            return f"\x1b[48;5;{c_id}m{TEXT}{text_to_print}{RESET}"
+        else:
+            # \x1b[38;5;... is FOREGROUND (Text) color
+            return f"\x1b[38;5;{c_id}m{text_to_print}{RESET}"
 
     def plot_drone_trajectory_animated(self, swarm,id=1):
         fig, ax = plt.subplots()

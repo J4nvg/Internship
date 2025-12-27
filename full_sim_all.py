@@ -13,7 +13,6 @@ def main():
     parser = argparse.ArgumentParser(description="Specify Simulation n_runs")
     parser.add_argument('--runs', type=int, default=1, help='Number of simulation runs.')
     parser.add_argument("--tactic",required=False,type=str,choices=tactics, help="Tactic to use")
-    # parser.add_argument("--add_to_name",required=False,type=str, help="add")
     args = parser.parse_args()
 
     print(f"Starting simulation with {args.runs} runs...")
@@ -42,7 +41,7 @@ def main():
                             continue
                         else:
                             print(f"Starting P dist: {p_dist} Hiding strat: {hiding_strategy} n hider candidates:{n_hider_candidates} with {n_hiders} hiders and swarmsize: {swarm_size}")
-                            sim = Simulation(n_runs=args.runs, log=True, width=WIDTH,n_hiders=n_hiders,n_hider_candidates=n_hider_candidates,swarm_size=swarm_size,hiding_strategy=hiding_strategy, success_p=p_dist)
+                            sim = Simulation(n_runs=args.runs, log=False, width=WIDTH,n_hiders=n_hiders,n_hider_candidates=n_hider_candidates,swarm_size=swarm_size,hiding_strategy=hiding_strategy, success_p=p_dist)
                             sim.start_main_sim_loop_single_tactic_metrics(plot_boards=False, tactic=args.tactic)
 
 
