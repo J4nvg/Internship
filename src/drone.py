@@ -15,6 +15,7 @@ class Swarm():
         self.temp_unavailable = set({})
         self.takenDown = []
 
+        self.visited_cells = set()
 
         self.symbol = symbol
 
@@ -51,6 +52,7 @@ class Swarm():
         self.done.clear()
         self.takenDown.clear()
         self.temp_unavailable.clear()
+        self.visited_cells.clear()
 
         for drone in self.swarm:
             if self.board.graph.has_node(drone.current_loc):
@@ -93,14 +95,18 @@ class Drone():
         self.symbol = symbol
         self.board = board
 
-        self.rng = np.random.default_rng()
+        self.grid = board.board
+
+        # self.rng = np.random.default_rng()
+        self.rng = random.Random()
 
         self.start = ()
         self.current_loc = ()
         self.done = False
 
         self.route = deque([])
-        self.route_history = []
+        # self.route_history = []
+        self.steps_taken = 0
 
         self.available = True
         self.alive = True
@@ -112,7 +118,8 @@ class Drone():
         self.current_loc = self.start
         self.route = deque([])
 
-        self.route_history = []
+        # self.route_history = []
+        self.steps_taken = 0
         self.alive = True
         self.route_length = -1
 
@@ -132,24 +139,20 @@ class Drone():
         :return: Tuple[Bool,Bool], If the hider was found and If the drone is down
         """
         if not self.alive:
-            is_down = True
-            found = False
-            return found,is_down
+            return False,True # target_found, is_down
 
-        is_down = False
         graph = self.board.graph
         nodes = graph.nodes
 
-        next_node = to_x_y
-        next_cell = nodes[next_node]['cell']
-
+        nx, ny = to_x_y
+        next_cell = self.grid[ny][nx]
 
         target_found = next_cell.contains_hider
 
         current_node = self.current_loc
 
-        if manhattan_distance(to_x_y,current_node) >1:
-            raise Exception("Drone cannot skip cells........ Fatal error")
+        # if manhattan_distance(to_x_y,current_node) >1:
+        #     raise Exception("Drone cannot skip cells........ Fatal error") #temp disable for performance
 
         current_cell = nodes[current_node]['cell']
 
@@ -158,20 +161,20 @@ class Drone():
         if self.rng.random() < (1 - next_cell.p):
             self.alive = False
             self.parent_swarm.drone_takedown(self)
-            # print(f"{self} was taken down when going to {to_x_y}")
-            is_down = True
-            found = False
-            return found,is_down
+            return False, True # target_found, is_down
 
 
         next_cell.add_drone(self)
-        self.current_loc = next_node
-        self.route_history.append(next_node)
+
+        self.current_loc = to_x_y
+        # self.route_history.append(next_node) Since reconstruction of path is not used anymore
+        self.steps_taken += 1
+        self.parent_swarm.visited_cells.add(to_x_y)
 
         if target_found:
             next_cell.after_cell_found()
 
-        return target_found,is_down
+        return target_found, False # target_found, is_down
 
     def move_next_from_route(self):
         """
@@ -196,8 +199,10 @@ class Drone():
 
     def set_init_location(self,loc):
         self.current_loc = loc
-        self.route_history.append(loc)
+        # self.route_history.append(loc)
         self.start = loc
+        self.steps_taken = 1
+        self.parent_swarm.visited_cells.add(loc)
         self.board.add_drone_to_board(self, s=loc)
         return
 

@@ -216,6 +216,55 @@ def route_interpolator_avoid_nodes(visit_order: list[point], start: point,to_avo
     return route
 
 
+import networkx as nx
+
+
+def lidbetter_dynamic_route_interpolator(visit_order: list[tuple[int, int]],
+                                         start: tuple[int, int],
+                                         graph: nx.Graph, all_paths) -> list[tuple[int, int]]:
+    """
+    Traverses the visit_order. treats ALL targets in the list as high-risk obstacles,
+    except for the specific target currently being sought.
+
+    This prevents the route from backtracking through previously visited nodes (like A)
+    when trying to reach future nodes (like D).
+
+    :param visit_order: List of points (tuples) to visit in specific order.
+    :param start: Starting point (tuple).
+    :param graph: The networkx graph representing the board/grid.
+    :return: List of points representing the full interpolated route.
+    """
+    route = [start]
+    current_loc = start
+
+    all_targets = set(visit_order)
+
+    penalty_weight = graph.number_of_nodes() * 10
+
+    for next_waypoint in visit_order:
+        if current_loc == next_waypoint:
+            continue
+
+        nodes_to_avoid = all_targets - {next_waypoint}
+
+        def dynamic_risk_weight(u, v, edge_attributes):
+            if v in nodes_to_avoid:
+                return penalty_weight
+
+            return edge_attributes.get('weight', 1)
+
+        leg = nx.shortest_path(
+            graph,
+            source=current_loc,
+            target=next_waypoint,
+            weight=dynamic_risk_weight
+        )
+
+        route.extend(leg[1:])
+        current_loc = next_waypoint
+
+    return route
+
 def discounted_distance(p1: point, p2: point, p2p: int, rev: bool) -> Numeric:
     """
     :param p1: point one, tuple[int, int]

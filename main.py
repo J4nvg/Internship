@@ -64,6 +64,8 @@ def main():
 
     if(args.plot_hm or args.plot):
         plot = True
+    else:
+        plot = False
 
 
     sim.start_main_sim_loop_single_tactic_metrics(plot_boards=plot,plot_hm=args.plot_hm,plot_interval=args.plotspeed, tactic=args.tactic)

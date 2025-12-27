@@ -11,7 +11,7 @@ WIDTH = 20 # Square board
 # Success P settings
 
 # OPTIONS: "SUCCESS_PROBABILITIES_INITIAL" | "SUCCESS_PROBABILITIES_HIGH_VAR" | "SUCCESS_PROBABILITIES_LOW_VAR" | "SUCCESS_PROBABILITIES_SKEWED"
-SUCCESS_PROBABILITIES_CHOSEN = "SUCCESS_PROBABILITIES_HIGH_VAR"
+SUCCESS_PROBABILITIES_CHOSEN = "SUCCESS_PROBABILITIES_LOW_VAR"
 Pi_DICT = {
     # Initial settings, before adding multiple sets
                 # 1       2       3       4       5       6
@@ -58,11 +58,11 @@ plot_hm = False # Turn this to true to change the plotting mode from original to
 
 ### Hider Settings ###
 NUMBER_OF_HIDER_CANDIDATES = 5
-N_HIDERS = 2
-HIDING_STRATEGY = 'greedy' # random | greedy | weighted  | int | list of ints
+N_HIDERS = 1
+HIDING_STRATEGY = 'weighted' # random | greedy | weighted  | int | list of ints
 
 ### Drone settings ###
-NUMBER_OF_DRONES_IN_SWARM = 5
+NUMBER_OF_DRONES_IN_SWARM = 1
 
 ########################
 #    Rename mapping    #

@@ -6,7 +6,8 @@ import sys
 from game_config import HIDING_STRATEGY,SUCCESS_PROBABILITIES_CHOSEN,Pi_DICT,WIDTH, NUMBER_OF_DRONES_IN_SWARM, DRONE_SYMBOL, NUMBER_OF_HIDER_CANDIDATES,N_HIDERS
 import networkx as nx
 from .helpers import get_optimal_permutation_md, get_all_stats, get_whole_and_remainder, get_all_stats_binom, \
-    route_interpolator, best_route_discount_distance, route_interpolator_avoid_nodes, manhattan_distance
+    route_interpolator, best_route_discount_distance, route_interpolator_avoid_nodes, manhattan_distance, \
+    lidbetter_dynamic_route_interpolator
 from tqdm import tqdm
 import time
 import pandas as pd
@@ -142,17 +143,19 @@ class Simulation():
 
             steps, all_found, taken_down,frac_found = strat(plot_boards=plot_boards, plot_hm=plot_hm, plot_interval=plot_interval)
 
-            unique_cells_covered = set({})
-            distance_travelled = np.zeros(self.swarm.size)
-            for j, drone in enumerate(self.swarm.swarm):
-                history = drone.route_history
-                distance_travelled[j] = len(history)
-                for cell in history:
-                    unique_cells_covered.add(cell)
+            distance_travelled = np.array([d.steps_taken for d in self.swarm.swarm])
+            unique_cells_covered = len(self.swarm.visited_cells)
+            # for j, drone in enumerate(self.swarm.swarm):
+            #     history = drone.route_history_counter
+            #     distance_travelled[j] = len(history)
+            #     for cell in history:
+            #         unique_cells_covered.add(cell)
 
             self.save_data(i=i, steps=steps, all_found=all_found, taken_down=taken_down,
-                           unique_cells_covered=len(unique_cells_covered),
-                           mean_distance_travelled=np.mean(distance_travelled), total_distance_covered=np.sum(distance_travelled),hider_frac_found=frac_found,filename=filename)
+                           unique_cells_covered=unique_cells_covered,
+                           mean_distance_travelled=np.mean(distance_travelled),
+                           total_distance_covered=np.sum(distance_travelled),
+                           hider_frac_found=frac_found, filename=filename)
 
         self.generate_stats(tactic)
 
@@ -462,7 +465,8 @@ class Simulation():
 
         start = swarm.swarm[0].start
 
-        route = route_interpolator(visit_cells_order,start,board.graph,self.all_paths)
+        # route = route_interpolator(visit_cells_order,start,board.graph,self.all_paths) old method
+        route = lidbetter_dynamic_route_interpolator(visit_cells_order,start,board.graph,self.all_paths)
 
         return self._run_traversal_loop_swarm(
             swarm, route,plot_boards,plot_hm, plot_interval, terminate_after_route=False
