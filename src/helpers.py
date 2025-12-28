@@ -1,3 +1,4 @@
+NX_CUGRAPH_AUTOCONFIG=True
 from itertools import permutations, combinations
 import numpy as np
 from scipy.stats import binomtest

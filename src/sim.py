@@ -1,3 +1,4 @@
+NX_CUGRAPH_AUTOCONFIG=True
 from functools import cache
 from .board import Board
 from .drone import  Swarm
