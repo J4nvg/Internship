@@ -13,6 +13,7 @@
   - [Swarm & Drones](#swarm--drones)
 - [Usage](#use)
 - [List of Available Tactics](#list-of-available-tactics)
+- [Logs and Results](#logs)
 - [Recommended Use](#recommended-use)
 - [Searching Policies](#searching-policies)
   - [Divide over risk](#divide-over-risk)
@@ -162,6 +163,11 @@ Run directly from command line:
 | 12. Shared list                          |       **sl** |
 
 ---
+
+## Logs and results:
+- Raw logs are saved in the ./data / sim_logs directory;
+- Simulation results are saved in the ./data / sim_results directory;
+- the to_one_dataset.py file should be ran without any arguments from the sim_results directory to merge all result files into one big dataset for easier data analysis.
 
 ## Recommended use:
 
