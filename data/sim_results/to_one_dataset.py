@@ -44,8 +44,8 @@ pattern = re.compile(
 )
 
 
-# os.path.join(f"data", f"sim_results", f"{p_dist}")
-# input_folder = f"./data/sim_results"
+#RUN FROM sim results directory
+
 input_folder_main = f"./"
 output_path = f"../dataset/"
 

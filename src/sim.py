@@ -164,6 +164,8 @@ class Simulation():
 
         print(f"Game stats for: {tactic}, nruns: {self.runs}")
         print(f"grid_w: {self.width}, grid_h {self.width}, swarm_size {self.swarm_size}")
+        print(f"Hiders: {self.n_hiders}/{self.n_hider_candidates}, Hiding strategy: {self.hiding_strategy}")
+        print(f"Success probabilities:{self.success_probabilities}")
         metrics_find = get_all_stats(self.steps, self.runs)
 
         metrics_taken_down = get_all_stats(self.taken_down, self.runs)
@@ -189,13 +191,13 @@ class Simulation():
         if self.log:
             os.makedirs(self.res_dir, exist_ok=True)
             table.to_csv(f"{self.res_dir}/{self.file_name}", sep='\t', encoding='utf-8', header=True)
-
-        epsilon = 0.01
-        numRuns = int(np.ceil((1.96 * np.std(self.steps) / epsilon) ** 2))
-        print("Minimum required simulations for steps:", numRuns)
-
-        numRuns = int(np.ceil((1.96 * np.std(self.taken_down) / epsilon) ** 2))
-        print("Minimum required simulations for taken_down:", numRuns)
+        #
+        # epsilon = 0.01
+        # numRuns = int(np.ceil((1.96 * np.std(self.steps) / epsilon) ** 2))
+        # print("Minimum required simulations for steps:", numRuns)
+        #
+        # numRuns = int(np.ceil((1.96 * np.std(self.taken_down) / epsilon) ** 2))
+        # print("Minimum required simulations for taken_down:", numRuns)
 
         return
 
@@ -219,7 +221,7 @@ class Simulation():
                     if all_found:
                         break
             if plot_boards:
-                sys.stdout.write("\033[H\033[J")
+                sys.stdout.write("\033[H")
                 self.board.print_board(plot_hm)
                 sys.stdout.flush()
                 time.sleep(plot_interval)
@@ -669,7 +671,7 @@ class Simulation():
                     n_found += 1
                     all_found = True if n_found == n_hiders else False
             if plot_boards:
-                sys.stdout.write("\033[H\033[J") # Clear screen
+                sys.stdout.write("\033[H") # Clear screen
                 self.board.print_board(plot_hm)
                 sys.stdout.flush()
                 time.sleep(plot_interval)
@@ -694,7 +696,7 @@ class Simulation():
                     n_found += 1
                     all_found = True if n_found == n_hiders else False
             if plot_boards:
-                sys.stdout.write("\033[H\033[J")
+                sys.stdout.write("\033[H")
                 self.board.print_board(plot_hm)
                 sys.stdout.flush()
                 time.sleep(plot_interval)
@@ -871,7 +873,7 @@ class Simulation():
                             swarm.to_available(drone)
 
             if plot_boards:
-                sys.stdout.write("\033[H\033[J")
+                sys.stdout.write("\033[H")
                 self.board.print_board(plot_hm)
                 sys.stdout.flush()
                 time.sleep(plot_interval)

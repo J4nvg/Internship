@@ -7,11 +7,11 @@
 WIDTH = 20 # Square board
 
 ### General P_i settings ###
-# If len(p_settings_list) < n_hider_candidates it should be with replacement to avoid errors
+# If len(p_settings_list) < n_hider_candidates, sampling should be with replacement to avoid errors
 # Success P settings
 
 # OPTIONS: "SUCCESS_PROBABILITIES_INITIAL" | "SUCCESS_PROBABILITIES_HIGH_VAR" | "SUCCESS_PROBABILITIES_LOW_VAR" | "SUCCESS_PROBABILITIES_SKEWED"
-SUCCESS_PROBABILITIES_CHOSEN = "SUCCESS_PROBABILITIES_LOW_VAR"
+SUCCESS_PROBABILITIES_CHOSEN = "SUCCESS_PROBABILITIES_HIGH_VAR"
 Pi_DICT = {
     # Initial settings, before adding multiple sets
                 # 1       2       3       4       5       6
@@ -38,18 +38,12 @@ Pi_DICT = {
         {"p": [  0.60,    0.62,   0.64,   0.66,   0.10],
          "WITH_REPLACEMENT": False
          },
+
 }
 
 
 ### General Drone settings ###
 DRONE_SYMBOL = 'X'
-
-
-#########################
-#   Printing settings   #
-#########################
-
-plot_hm = False # Turn this to true to change the plotting mode from original to heatmap mode
 
 
 ########################
@@ -59,10 +53,10 @@ plot_hm = False # Turn this to true to change the plotting mode from original to
 ### Hider Settings ###
 NUMBER_OF_HIDER_CANDIDATES = 5
 N_HIDERS = 1
-HIDING_STRATEGY = 'weighted' # random | greedy | weighted  | int | list of ints
+HIDING_STRATEGY = 'greedy' # random | greedy | weighted  | int | list of ints
 
 ### Drone settings ###
-NUMBER_OF_DRONES_IN_SWARM = 1
+NUMBER_OF_DRONES_IN_SWARM = 5
 
 ########################
 #    Rename mapping    #

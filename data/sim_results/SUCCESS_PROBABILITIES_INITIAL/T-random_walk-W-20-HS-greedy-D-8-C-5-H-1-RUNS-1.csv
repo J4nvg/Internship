@@ -1,0 +1,8 @@
+	min	max	mean	var	ci_lower	ci_upper	Half_width
+steps	680.0	680.0	680.0	0.0	680.0	680.0	0.0
+taken_down	8.0	8.0	8.0	0.0	8.0	8.0	0.0
+area_covered	0.935	0.935	0.935	0.0	0.935	0.935	0.0
+mean_distance_travelled	346.125	346.125	346.125	0.0	346.125	346.125	0.0
+total_distance_covered	2769.0	2769.0	2769.0	0.0	2769.0	2769.0	0.0
+hider_frac_found	0.0	0.0	0.0	0.0	0.0	0.0	0.0
+all_found	NA	NA	0.0	NA	0.0	0.975	NA

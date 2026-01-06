@@ -1,6 +1,6 @@
 # Simple drone swarm simulator in adversarial hide & seek environment
 <p align="center">
-<img src="img/PHS.png" width="400" >
+<img src="img/PLOTMODE.gif" width="400" >
 </p>
 
 ---
@@ -127,16 +127,20 @@ The first game-step or simulation step is the swarm entering the grid on positio
 Run directly from command line:
 
 ```sh
-main.py --plot --tactic <tactic> --runs <nruns> --log
+(uv run) main.py --plot --plot_hm --health --tactic <tactic> --runs <nruns> --log
+# OR
+(uv run) full_sim_tactic.py --tactic <tactic> --runs <runs>
 ```
 
 | CMD               |                    Explanation                    |
-| :---------------- | :-----------------------------------------------: |
-| --plot            |   Enables printed visualisation simulation runs.  |
-| --tactic <tactic> |       Specify which searching tactic to use.      |
-| --runs <nruns>    |       Specify the amount of simulation runs.      |
+|:------------------|:-------------------------------------------------:|
+| --plot            |  Enables printed visualisation simulation runs.   |
+| --plot_hm         |         render simulation in heatmap mode         |
+| --tactic <tactic> |      Specify which searching tactic to use.       |
+| --runs <nruns>    |      Specify the amount of simulation runs.       |
 | --log             | Enables logging to csv file in sim_logs directory |
 | --plotspeed       |      increase plot interval time must be > 0      |
+| --health          |                 Check for errors                  |
 
 ---
 
@@ -201,6 +205,7 @@ $$
 q_A = \lambda_k \prod_{i \in A} \frac{1 - p_i}{p_i}, \quad \text{where} \quad
 \lambda_k = \left( \sum_{B \in S^{(k)}} \prod_{i \in B} \frac{1 - p_i}{p_i} \right)^{-1}.
 $$
+Explicitely avoids non-target cells
 
 ---
 
@@ -315,28 +320,3 @@ If alpha is kept fixed instead the resulting distribution becomes more spread ou
 [^1]: Lidbetter T (2020) *Search and rescue in the face of uncertain threats*, European Journal of Operational Research 285(3):1153–1160.
     [https://doi.org/10.1016/j.ejor.2020.02.029](https://doi.org/10.1016/j.ejor.2020.02.029)
 
-[//]: # (cd ./projects/Internship && source .venv/bin/activate && uv run ./full_sim_all.py --tactic ttbp --runs 100_000)
-
-[//]: # (cd ./projects/Internship && source .venv/bin/activate && uv run ./full_sim_all.py --tactic dor --runs 100_000)
-
-[//]: # (cd ./projects/Internship && source .venv/bin/activate && uv run ./full_sim_all.py --tactic phs --runs 100_000)
-
-[//]: # (cd ./projects/Internship && source .venv/bin/activate && uv run ./full_sim_all.py --tactic hs --runs 100_000)
-
-[//]: # (cd ./projects/Internship && source .venv/bin/activate && uv run ./full_sim_all.py --tactic sp --runs 100_000)
-
-[//]: # (cd ./projects/Internship && source .venv/bin/activate && uv run ./full_sim_all.py --tactic rndm --runs 100_000)
-
-[//]: # (cd ./projects/Internship && source .venv/bin/activate && uv run ./full_sim_all.py --tactic lb --runs 100_000)
-
-[//]: # (cd ./projects/Internship && source .venv/bin/activate && uv run ./full_sim_all.py --tactic toq --runs 100_000)
-
-[//]: # (cd ./projects/Internship && source .venv/bin/activate && uv run ./full_sim_all.py --tactic tpq --runs 100_000)
-
-[//]: # (cd ./projects/Internship && source .venv/bin/activate && uv run ./full_sim_all.py --tactic dd --runs 100_000)
-
-[//]: # (cd ./projects/Internship && source .venv/bin/activate && uv run ./full_sim_all.py --tactic ddr --runs 100_000)
-
-[//]: # (cd ./projects/Internship && source .venv/bin/activate && uv run ./full_sim_all.py --tactic sl --runs 100_000)
-
-[//]: # ()

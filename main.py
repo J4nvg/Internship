@@ -6,12 +6,6 @@ from src import Simulation
 import argparse
 from src.constants import tactic_abbr_full
 
-"""
-#TODO
-- Shared list approach
-- Dashboard such that it becomes a web app
-"""
-
 def checkforerrors():
     hiding_strategy_to_try = ["greedy","weighted","random"]
 
@@ -48,6 +42,7 @@ def main():
     parser.add_argument( '--log', action='store_true',help='Enable logging to CSV.', default=False)
     parser.add_argument( '--plotspeed',default=.2, type=float,help='increase or decrease plotting speed, 0 < speed < 1')
     parser.add_argument( '--health',default=False, type=bool,help='check for simulation health, maybe errors got introduced')
+
     args = parser.parse_args()
 
     if args.health:
@@ -58,8 +53,24 @@ def main():
         except Exception as e:
             print("Something went wrong during the health check",e)
 
+    if args.runs >= 10000:
+        start_time = timeit.default_timer()
+        sim = Simulation(n_runs=1000, log=False)
+        sim.start_main_sim_loop_single_tactic_metrics(plot_boards=False, plot_hm=False,
+                                                      plot_interval=args.plotspeed, tactic=args.tactic)
+        end_time = timeit.default_timer()
+        sys.stdout.write("\033[H\033[J")
+        print(f" 1000 runs took {end_time - start_time} seconds")
+        print(f"Expected duration for {args.runs} runs : {(end_time - start_time)/1000 * args.runs:.2f} seconds")
+
+        print("Continue? [Y/n]...")
+        yes_or_no = input()
+        if yes_or_no == "n":
+            sys.stdout.write("\033[H\033[J")
+            sys.exit(0)
 
     print(f"Starting simulation for tactic: {args.tactic} with {args.runs} runs...")
+    start_time = timeit.default_timer()
     sim = Simulation(n_runs=args.runs, log=args.log)
 
     if(args.plot_hm or args.plot):
@@ -67,18 +78,13 @@ def main():
     else:
         plot = False
 
+    sys.stdout.write("\033[H\033[J")
 
     sim.start_main_sim_loop_single_tactic_metrics(plot_boards=plot,plot_hm=args.plot_hm,plot_interval=args.plotspeed, tactic=args.tactic)
-
-    # sim = Simulation(n_runs=1_000, log=False)
-    # sim.start_main_sim_loop_single_tactic_metrics(plot_boards=False,plot_interval=0.1, tactic="rndm")
-
-
+    end_time = timeit.default_timer()
+    print(f"Total execution time: {end_time - start_time:.2f} seconds")
 
 
 
 if __name__ == "__main__":
-    start_time = timeit.default_timer()
     main()
-    end_time = timeit.default_timer()
-    print(f"Total execution time: {end_time - start_time:.2f} seconds")

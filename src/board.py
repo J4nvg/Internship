@@ -327,15 +327,18 @@ class Board():
         plt.ylabel("Y coordinate")
         plt.show()
 
-    def print_board(self,plot_hm=False):
+    def print_board(self, plot_hm=False):
+        output_buffer = []  # Accumulate lines here
+
         if not plot_hm:
-            horizontal_line = "== " * (self.width + 1)
-            print(f" {horizontal_line}")
+            horizontal_line = "==" * (self.width + 1)
+            output_buffer.append(f" {horizontal_line}")
             for row in self.board:
                 row_str = " ".join(str(cell) for cell in row)
-                print(f'‖ {row_str} ‖')
-            print(f" {horizontal_line}")
+                output_buffer.append(f'‖ {row_str} ‖')
+            output_buffer.append(f" {horizontal_line}")
         else:
+            # [Existing logic for calculating min_p/max_p...]
             candidate_ps = [c.p for row in self.board for c in row if c.is_hider_candidate]
             if candidate_ps:
                 min_p, max_p = min(candidate_ps), max(candidate_ps)
@@ -346,7 +349,9 @@ class Board():
             line_len = (cell_width + 2) * self.width
             horizontal_line = "=" * (line_len + 2)
 
-            print(f" {horizontal_line}")
+            output_buffer.append(f" {horizontal_line}")
+
+            # --- FIRST BOARD (COLORS) ---
             for row in self.board:
                 formatted_cells = []
                 for cell in row:
@@ -366,26 +371,25 @@ class Board():
                         formatted_cells.append(f"{pad_l}{original_s}{pad_r}")
 
                 row_str = "  ".join(formatted_cells)
-                print(f'‖  {row_str}  ‖')
-            print(f" {horizontal_line}")
+                output_buffer.append(f'‖  {row_str}  ‖')
+            output_buffer.append(f" {horizontal_line}")
 
             # --- SECOND BOARD (VALUES) ---
-            print(f" {horizontal_line}")
+            output_buffer.append(f" {horizontal_line}")
             for row in self.board:
                 formatted_cells = []
                 for cell in row:
-                    # 1. Get value string (Using str(cell.p) or f"{cell.p:.2f}" for neatness)
                     val_s = str(cell.p)
-
-                    # 2. Pad first (crucial for background color)
                     total_padding = cell_width - len(val_s)
-                    if total_padding < 0: total_padding = 0  # Safety if number is huge
+                    if total_padding < 0: total_padding = 0
 
                     pad_l = " " * (total_padding // 2)
                     pad_r = " " * (total_padding - len(pad_l))
-                    padded_s = f"{pad_l}{val_s}{pad_r}"
+                    if cell.p == 1:
+                        padded_s = f"{pad_l}{'.'}{pad_r}"
+                    else:
+                        padded_s = f"{pad_l}{val_s}{pad_r}"
 
-                    # 3. Apply Color
                     if cell.is_hider_candidate:
                         colored = self.get_heatmap_color(cell.p, padded_s, min_p, max_p, background_mode=True)
                         formatted_cells.append(colored)
@@ -393,11 +397,15 @@ class Board():
                         formatted_cells.append(padded_s)
 
                 row_str = "  ".join(formatted_cells)
-                print(f'‖  {row_str}  ‖')
-            print(f" {horizontal_line}")
+                output_buffer.append(f'‖  {row_str}  ‖')
+            output_buffer.append(f" {horizontal_line}")
+
             col_min = self.get_heatmap_color(min_p, min_p, min_p, max_p, background_mode=True)
             col_max = self.get_heatmap_color(max_p, max_p, min_p, max_p, background_mode=True)
-            print(f"Success probability, p between ( {col_min} - {col_max} ) ")
+            output_buffer.append(f"Success probability, p between ( {col_min} - {col_max} ) ")
+
+        # Print everything in one go to reduce I/O flickering
+        print("\n".join(output_buffer))
 
     def get_heatmap_color(self, val, text_to_print, min_val, max_val, background_mode=True):
         RESET = "\x1b[0m"
